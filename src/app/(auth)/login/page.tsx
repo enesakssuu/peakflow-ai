@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Zap, Mail, ArrowRight } from 'lucide-react';
+import { Zap, Mail, ArrowRight, ArrowLeft } from 'lucide-react';
 
 export default function LoginPage() {
   const { signInWithGoogle, signInWithEmail } = useAuth();
@@ -179,6 +179,17 @@ export default function LoginPage() {
             </p>
           </CardContent>
         </Card>
+        
+        {/* Back link */}
+        <div className="text-center mt-4">
+          <Link
+            href="/"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 mr-1" />
+            Back to home
+          </Link>
+        </div>
 
         {/* Footer */}
         <p className="text-center text-xs text-muted-foreground mt-6">

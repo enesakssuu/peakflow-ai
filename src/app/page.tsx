@@ -33,34 +33,34 @@ export default function HomePage() {
 
       {/* Header */}
       <header className="bg-surface/80 backdrop-blur-md sticky top-0 z-50 border-b border-border/10">
-        <div className="flex justify-between items-center px-6 md:px-12 h-20 w-full max-w-[1120px] mx-auto relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-              <Zap className="w-5 h-5 text-accent" />
+        <div className="flex justify-between items-center px-4 sm:px-6 md:px-12 h-20 w-full max-w-[1120px] mx-auto relative z-10">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+              <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
             </div>
-            <span className="text-xl font-bold text-foreground tracking-tight">PeakFlow AI</span>
+            <span className="text-lg sm:text-xl font-bold text-foreground tracking-tight whitespace-nowrap">PeakFlow AI</span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             {firebaseUser ? (
               <Link 
                 href="/dashboard"
-                className="bg-accent text-accent-foreground rounded-[16px] px-6 py-2.5 font-medium text-sm hover:opacity-90 transition-opacity flex items-center gap-1.5"
+                className="bg-accent text-accent-foreground rounded-[12px] sm:rounded-[16px] px-4 sm:px-6 py-2 sm:py-2.5 font-medium text-xs sm:text-sm hover:opacity-90 transition-opacity flex items-center gap-1 sm:gap-1.5"
               >
-                Go to Dashboard
-                <ArrowRight className="w-4 h-4" />
+                Dashboard
+                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </Link>
             ) : (
               <>
                 <Link 
                   href="/login"
-                  className="font-medium text-sm text-muted-foreground hover:text-foreground transition-colors px-4 py-2"
+                  className="font-medium text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors px-2 sm:px-4 py-2"
                 >
                   Log In
                 </Link>
                 <Link 
                   href="/signup"
-                  className="bg-accent text-accent-foreground rounded-[16px] px-6 py-2.5 font-medium text-sm hover:opacity-90 transition-opacity"
+                  className="bg-accent text-accent-foreground rounded-[12px] sm:rounded-[16px] px-4 sm:px-6 py-2 sm:py-2.5 font-medium text-xs sm:text-sm hover:opacity-90 transition-opacity"
                 >
                   Start Free
                 </Link>
@@ -73,33 +73,33 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="w-full relative z-10">
         {/* Hero Section */}
-        <section className="pt-24 pb-16 px-6 md:px-12 w-full max-w-[1120px] mx-auto flex flex-col items-center text-center">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground max-w-[850px] leading-tight tracking-tight mb-6">
+        <section className="pt-16 sm:pt-24 pb-16 px-4 sm:px-6 md:px-12 w-full max-w-[1120px] mx-auto flex flex-col items-center text-center">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground max-w-[850px] leading-tight tracking-tight mb-6">
             Your work doesn't need more organization. It needs <span className="text-accent">better decisions</span>.
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-[620px] mb-8 leading-relaxed">
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-[620px] mb-8 leading-relaxed">
             PeakFlow AI analyzes your tasks, energy, and schedule to tell you exactly what to focus on next.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 mb-20 w-full sm:w-auto">
             <Link 
               href={firebaseUser ? "/dashboard" : "/signup"}
-              className="bg-accent text-accent-foreground rounded-[16px] px-8 py-3.5 font-medium text-base hover:shadow-lg hover:shadow-accent/10 transition-shadow flex items-center justify-center gap-2"
+              className="bg-accent text-accent-foreground rounded-[12px] sm:rounded-[16px] px-6 sm:px-8 py-2.5 sm:py-3.5 font-medium text-sm sm:text-base hover:shadow-lg hover:shadow-accent/10 transition-shadow flex items-center justify-center gap-2"
             >
               Start Free
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </Link>
             <button 
-              className="bg-transparent border border-border text-foreground rounded-[16px] px-8 py-3.5 font-medium text-base hover:bg-secondary/40 transition-colors flex items-center justify-center gap-2"
+              className="bg-transparent border border-border text-foreground rounded-[12px] sm:rounded-[16px] px-6 sm:px-8 py-2.5 sm:py-3.5 font-medium text-sm sm:text-base hover:bg-secondary/40 transition-colors flex items-center justify-center gap-2"
               onClick={() => alert("Demo video is coming soon!")}
             >
-              <Play className="w-5 h-5 fill-current text-muted-foreground" />
+              <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current text-muted-foreground" />
               Watch Demo
             </button>
           </div>
 
           {/* Hero Visual: AI Recommendation Card */}
-          <div className="w-full max-w-[800px] bg-card rounded-[24px] p-8 md:p-10 border border-border/50 shadow-xl relative overflow-hidden group hover:scale-[1.01] transition-transform duration-500 ease-out text-left">
+          <div className="w-full max-w-[800px] bg-card rounded-[24px] p-6 sm:p-8 md:p-10 border border-border/50 shadow-xl relative overflow-hidden group hover:scale-[1.01] transition-transform duration-500 ease-out text-left">
             {/* Subtle glow effect */}
             <div className="absolute -top-24 -right-24 w-64 h-64 bg-accent/10 opacity-40 blur-[60px] rounded-full pointer-events-none" />
             
