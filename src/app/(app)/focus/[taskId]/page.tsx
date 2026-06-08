@@ -224,10 +224,10 @@ export default function FocusPage() {
       <div className="flex items-center gap-4 animate-fade-in-up delay-200">
         <Button
           size="xl"
-          variant={isRunning ? 'outline' : 'accent'}
+          variant={isRunning ? 'ghost' : 'accent'}
           className={
             isRunning
-              ? 'border-white/20 text-white hover:bg-white/10 w-40'
+              ? 'border border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white w-40'
               : 'w-40'
           }
           onClick={() => setIsRunning(!isRunning)}

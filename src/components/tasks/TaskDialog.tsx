@@ -58,7 +58,7 @@ export default function TaskDialog({ open, onOpenChange, task, onSave }: TaskDia
     if (!title.trim()) return;
     onSave({
       title: title.trim(),
-      estimatedDuration: duration,
+      estimatedDuration: Math.max(1, duration),
       impactScore: impact,
     });
     onOpenChange(false);
@@ -98,9 +98,14 @@ export default function TaskDialog({ open, onOpenChange, task, onSave }: TaskDia
 
           {/* Duration */}
           <div className="space-y-3">
-            <Label className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-              Estimated Duration
+            <Label className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                Estimated Duration
+              </span>
+              <span className="text-xs text-accent font-semibold">
+                {duration > 0 ? `${duration} min` : 'Not set'}
+              </span>
             </Label>
             <div className="grid grid-cols-3 gap-2">
               {durations.map((d) => (
@@ -117,6 +122,28 @@ export default function TaskDialog({ open, onOpenChange, task, onSave }: TaskDia
                   {d.label}
                 </button>
               ))}
+            </div>
+            <div className="mt-2.5 flex items-center justify-between gap-4 border-t border-border/40 pt-2.5">
+              <span className="text-xs font-medium text-muted-foreground">Or set custom minutes:</span>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={1}
+                  max={480}
+                  value={duration || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') {
+                      setDuration(0);
+                    } else {
+                      const num = parseInt(val);
+                      setDuration(isNaN(num) ? 0 : num);
+                    }
+                  }}
+                  className="w-24 h-9 text-sm text-center font-medium"
+                />
+                <span className="text-xs text-muted-foreground">min</span>
+              </div>
             </div>
           </div>
 
