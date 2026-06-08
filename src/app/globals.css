@@ -111,6 +111,34 @@ body {
   100% { background-position: 200% 0; }
 }
 
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-20px) scale(1.05); }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 30s linear infinite;
+}
+
+.animate-float-1 {
+  animation: float-slow 12s ease-in-out infinite;
+}
+
+.animate-float-2 {
+  animation: float-slow 18s ease-in-out infinite 2s;
+}
+
+.animate-float-3 {
+  animation: float-slow 24s ease-in-out infinite 4s;
+}
+
 .animate-fade-in {
   animation: fade-in 0.5s ease-out forwards;
 }

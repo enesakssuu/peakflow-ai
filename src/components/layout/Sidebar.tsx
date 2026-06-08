@@ -107,7 +107,7 @@ export default function Sidebar() {
         </nav>
 
         {/* User section */}
-        <div className="p-4 border-t border-border">
+        <div className="p-4 pb-8 lg:pb-4 border-t border-border">
           <div className="flex items-center gap-3 mb-3 px-2">
             <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-xs font-semibold text-accent">
               {userData?.name?.charAt(0)?.toUpperCase() || 'U'}
@@ -130,7 +130,7 @@ export default function Sidebar() {
       </aside>
 
       {/* Mobile bottom tab bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-card/95 backdrop-blur-md border-t border-border">
         <nav className="flex items-center justify-around h-16 px-2">
           {navItems.map((item) => {
             const isActive = pathname === item.href;

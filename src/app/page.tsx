@@ -26,9 +26,9 @@ export default function HomePage() {
     <div className="min-h-screen bg-background text-on-background selection:bg-secondary-container selection:text-secondary-fixed">
       {/* Background gradient orbs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-accent/5 rounded-full blur-3xl" />
-        <div className="absolute top-[40%] -left-40 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 right-20 w-[600px] h-[600px] bg-accent/3 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-accent/5 rounded-full blur-3xl animate-float-1" />
+        <div className="absolute top-[40%] -left-40 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-3xl animate-float-2" />
+        <div className="absolute -bottom-40 right-20 w-[600px] h-[600px] bg-accent/3 rounded-full blur-3xl animate-float-3" />
       </div>
 
       {/* Header */}
@@ -74,23 +74,23 @@ export default function HomePage() {
       <main className="w-full relative z-10">
         {/* Hero Section */}
         <section className="pt-16 sm:pt-24 pb-16 px-4 sm:px-6 md:px-12 w-full max-w-[1120px] mx-auto flex flex-col items-center text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground max-w-[850px] leading-tight tracking-tight mb-6">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground max-w-[850px] leading-tight tracking-tight mb-6 opacity-0 animate-fade-in-up">
             Your work doesn't need more organization. It needs <span className="text-accent">better decisions</span>.
           </h1>
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-[620px] mb-8 leading-relaxed">
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-[620px] mb-8 leading-relaxed opacity-0 animate-fade-in-up delay-100">
             PeakFlow AI analyzes your tasks, energy, and schedule to tell you exactly what to focus on next.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 mb-20 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-4 mb-20 w-full sm:w-auto opacity-0 animate-fade-in-up delay-200">
             <Link 
               href={firebaseUser ? "/dashboard" : "/signup"}
-              className="bg-accent text-accent-foreground rounded-[12px] sm:rounded-[16px] px-6 sm:px-8 py-2.5 sm:py-3.5 font-medium text-sm sm:text-base hover:shadow-lg hover:shadow-accent/10 transition-shadow flex items-center justify-center gap-2"
+              className="bg-accent text-accent-foreground rounded-[12px] sm:rounded-[16px] px-6 sm:px-8 py-2.5 sm:py-3.5 font-medium text-sm sm:text-base hover:shadow-lg hover:shadow-accent/15 transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5 active:translate-y-0 duration-200"
             >
               Start Free
               <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </Link>
             <button 
-              className="bg-transparent border border-border text-foreground rounded-[12px] sm:rounded-[16px] px-6 sm:px-8 py-2.5 sm:py-3.5 font-medium text-sm sm:text-base hover:bg-secondary/40 transition-colors flex items-center justify-center gap-2"
+              className="bg-transparent border border-border text-foreground rounded-[12px] sm:rounded-[16px] px-6 sm:px-8 py-2.5 sm:py-3.5 font-medium text-sm sm:text-base hover:bg-secondary/40 hover:border-foreground/30 transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5 active:translate-y-0 duration-200"
               onClick={() => alert("Demo video is coming soon!")}
             >
               <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current text-muted-foreground" />
@@ -99,7 +99,7 @@ export default function HomePage() {
           </div>
 
           {/* Hero Visual: AI Recommendation Card */}
-          <div className="w-full max-w-[800px] bg-card rounded-[24px] p-6 sm:p-8 md:p-10 border border-border/50 shadow-xl relative overflow-hidden group hover:scale-[1.01] transition-transform duration-500 ease-out text-left">
+          <div className="w-full max-w-[800px] bg-card rounded-[24px] p-6 sm:p-8 md:p-10 border border-border/50 shadow-xl relative overflow-hidden group hover:scale-[1.01] hover:shadow-2xl transition-all duration-500 ease-out text-left opacity-0 animate-fade-in-up delay-300">
             {/* Subtle glow effect */}
             <div className="absolute -top-24 -right-24 w-64 h-64 bg-accent/10 opacity-40 blur-[60px] rounded-full pointer-events-none" />
             
@@ -140,14 +140,35 @@ export default function HomePage() {
         </section>
 
         {/* Social Proof Section */}
-        <section className="py-12 border-y border-border/30 bg-secondary/10">
-          <div className="w-full max-w-[1120px] mx-auto px-6 md:px-12 text-center">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-8">Trusted by high-impact operators at</p>
-            <div className="flex flex-wrap justify-center items-center gap-12 md:gap-16 opacity-50 grayscale">
-              <span className="text-lg md:text-xl font-bold text-foreground">Acme Corp</span>
-              <span className="text-lg md:text-xl font-bold text-foreground tracking-tighter">GlobalTech</span>
-              <span className="text-lg md:text-xl font-bold text-foreground italic">Nexus</span>
-              <span className="text-lg md:text-xl font-light text-foreground">Lumina</span>
+        <section className="py-10 border-y border-border/30 bg-secondary/5 overflow-hidden">
+          <div className="w-full max-w-[1120px] mx-auto px-6 text-center">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-6 opacity-80 animate-fade-in">
+              Trusted by high-impact operators at
+            </p>
+            
+            {/* Scrolling Marquee Container */}
+            <div className="relative w-full overflow-hidden">
+              {/* Fade gradients */}
+              <div className="absolute inset-y-0 left-0 w-12 sm:w-24 bg-gradient-to-r from-[#F8FAFC] to-transparent z-10 pointer-events-none" />
+              <div className="absolute inset-y-0 right-0 w-12 sm:w-24 bg-gradient-to-l from-[#F8FAFC] to-transparent z-10 pointer-events-none" />
+              
+              <div className="flex gap-16 md:gap-24 animate-marquee py-2 whitespace-nowrap opacity-50 grayscale hover:opacity-80 transition-opacity">
+                {/* Original Items */}
+                <span className="text-base md:text-lg font-bold text-foreground tracking-tight">Acme Corp</span>
+                <span className="text-base md:text-lg font-extrabold text-foreground tracking-tighter">GlobalTech</span>
+                <span className="text-base md:text-lg font-bold text-foreground italic">Nexus</span>
+                <span className="text-base md:text-lg font-light text-foreground tracking-wide">Lumina</span>
+                <span className="text-base md:text-lg font-bold text-foreground tracking-wider">Aether</span>
+                <span className="text-base md:text-lg font-semibold text-foreground">Apex Labs</span>
+                
+                {/* Duplicate Items */}
+                <span className="text-base md:text-lg font-bold text-foreground tracking-tight">Acme Corp</span>
+                <span className="text-base md:text-lg font-extrabold text-foreground tracking-tighter">GlobalTech</span>
+                <span className="text-base md:text-lg font-bold text-foreground italic">Nexus</span>
+                <span className="text-base md:text-lg font-light text-foreground tracking-wide">Lumina</span>
+                <span className="text-base md:text-lg font-bold text-foreground tracking-wider">Aether</span>
+                <span className="text-base md:text-lg font-semibold text-foreground">Apex Labs</span>
+              </div>
             </div>
           </div>
         </section>
@@ -161,7 +182,7 @@ export default function HomePage() {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Step 1 */}
-            <div className="bg-card rounded-[24px] p-8 border border-border/40 shadow-sm">
+            <div className="bg-card rounded-[24px] p-8 border border-border/40 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
               <div className="w-12 h-12 rounded-xl bg-secondary/30 flex items-center justify-center text-foreground mb-6">
                 <Link2 className="w-6 h-6 text-accent" />
               </div>
@@ -172,7 +193,7 @@ export default function HomePage() {
             </div>
             
             {/* Step 2 */}
-            <div className="bg-card rounded-[24px] p-8 border border-border/40 shadow-sm">
+            <div className="bg-card rounded-[24px] p-8 border border-border/40 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
               <div className="w-12 h-12 rounded-xl bg-secondary/30 flex items-center justify-center text-foreground mb-6">
                 <Brain className="w-6 h-6 text-accent" />
               </div>
@@ -183,7 +204,7 @@ export default function HomePage() {
             </div>
             
             {/* Step 3 */}
-            <div className="bg-card rounded-[24px] p-8 border border-accent/20 shadow-md ring-1 ring-accent/5">
+            <div className="bg-card rounded-[24px] p-8 border border-accent/20 shadow-md ring-1 ring-accent/5 hover:shadow-lg hover:shadow-accent/5 hover:-translate-y-1 transition-all duration-300">
               <div className="w-12 h-12 rounded-xl bg-accent text-accent-foreground flex items-center justify-center mb-6">
                 <Zap className="w-6 h-6" />
               </div>
@@ -208,7 +229,7 @@ export default function HomePage() {
               <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent z-10" />
               
               {/* Floating Coach Insight Card */}
-              <div className="absolute bottom-6 left-6 right-6 md:bottom-8 md:left-8 md:right-8 bg-background/80 backdrop-blur-md rounded-[24px] p-6 border border-white/10 z-20">
+              <div className="absolute bottom-6 left-6 right-6 md:bottom-8 md:left-8 md:right-8 bg-background/80 backdrop-blur-md rounded-[24px] p-6 border border-white/10 z-20 group-hover:translate-y-[-6px] transition-transform duration-500 ease-out">
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center text-accent shrink-0">
                     <Sparkles className="w-4 h-4" />
