@@ -9,6 +9,8 @@ import {
   User as FirebaseUser,
   onAuthStateChanged,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
@@ -43,6 +45,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Check redirect result on mount
+    const checkRedirect = async () => {
+      try {
+        const result = await getRedirectResult(getFirebaseAuth());
+        if (result) {
+          const existing = await getUser(result.user.uid);
+          if (!existing) {
+            await createUser(result.user.uid, {
+              name: result.user.displayName || 'User',
+              email: result.user.email || '',
+              profession: '',
+              goal: '',
+              onboardingCompleted: false,
+            });
+          }
+          await fetchUserData(result.user);
+        }
+      } catch (err: unknown) {
+        console.error('Redirect sign in error:', err);
+      }
+    };
+    checkRedirect();
+
     const unsubscribe = onAuthStateChanged(getFirebaseAuth(), async (user) => {
       setFirebaseUser(user);
       if (user) {
@@ -56,18 +81,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [fetchUserData]);
 
   const signInWithGoogle = async () => {
-    const result = await signInWithPopup(getFirebaseAuth(), getGoogleProvider());
-    const existing = await getUser(result.user.uid);
-    if (!existing) {
-      await createUser(result.user.uid, {
-        name: result.user.displayName || 'User',
-        email: result.user.email || '',
-        profession: '',
-        goal: '',
-        onboardingCompleted: false,
-      });
+    try {
+      const result = await signInWithPopup(getFirebaseAuth(), getGoogleProvider());
+      const existing = await getUser(result.user.uid);
+      if (!existing) {
+        await createUser(result.user.uid, {
+          name: result.user.displayName || 'User',
+          email: result.user.email || '',
+          profession: '',
+          goal: '',
+          onboardingCompleted: false,
+        });
+      }
+      await fetchUserData(result.user);
+    } catch (err: any) {
+      if (err && (err.code === 'auth/popup-blocked' || err.message?.includes('popup'))) {
+        console.log('Popup blocked, falling back to redirect...');
+        await signInWithRedirect(getFirebaseAuth(), getGoogleProvider());
+      } else {
+        throw err;
+      }
     }
-    await fetchUserData(result.user);
   };
 
   const signInWithEmail = async (email: string, password: string) => {
