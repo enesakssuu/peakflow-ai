@@ -71,7 +71,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(getFirebaseAuth(), async (user) => {
       setFirebaseUser(user);
       if (user) {
-        await fetchUserData(user);
+        try {
+          await fetchUserData(user);
+        } catch (err: unknown) {
+          console.error('Error fetching user data on auth state change:', err);
+        }
       } else {
         setUserData(null);
       }
