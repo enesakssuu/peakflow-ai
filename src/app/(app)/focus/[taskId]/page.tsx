@@ -25,6 +25,8 @@ export default function FocusPage() {
   const [completed, setCompleted] = useState(false);
   const startTimeRef = useRef<Date>(new Date());
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const accumulatedTimeRef = useRef<number>(0);
+  const lastResumeTimeRef = useRef<Date>(new Date());
 
   // Load task
   useEffect(() => {
@@ -40,15 +42,39 @@ export default function FocusPage() {
     loadTask();
   }, [firebaseUser, taskId]);
 
-  // Timer
+  // Timer (Timestamp-based)
   useEffect(() => {
     if (isRunning && !completed) {
-      intervalRef.current = setInterval(() => {
-        setElapsed((prev) => prev + 1);
-      }, 1000);
+      // Always reset resume point on state run to keep it accurate
+      lastResumeTimeRef.current = new Date();
+
+      const tick = () => {
+        const diffSeconds = Math.floor((new Date().getTime() - lastResumeTimeRef.current.getTime()) / 1000);
+        setElapsed(accumulatedTimeRef.current + diffSeconds);
+      };
+
+      tick();
+      intervalRef.current = setInterval(tick, 1000);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [isRunning, completed]);
+
+  // Listen to visibility and focus events to catch up instantly
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isRunning && !completed) {
+        const diffSeconds = Math.floor((new Date().getTime() - lastResumeTimeRef.current.getTime()) / 1000);
+        setElapsed(accumulatedTimeRef.current + diffSeconds);
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
     };
   }, [isRunning, completed]);
 
@@ -68,11 +94,19 @@ export default function FocusPage() {
 
   const handleComplete = useCallback(async () => {
     if (!firebaseUser || !task || completed) return;
+
+    let finalElapsed = elapsed;
+    if (isRunning) {
+      const diffSeconds = Math.floor((new Date().getTime() - lastResumeTimeRef.current.getTime()) / 1000);
+      finalElapsed = accumulatedTimeRef.current + diffSeconds;
+    }
+
     setCompleted(true);
     setIsRunning(false);
+    setElapsed(finalElapsed);
 
     const endTime = new Date();
-    const durationMinutes = Math.round(elapsed / 60);
+    const durationMinutes = Math.round(finalElapsed / 60);
 
     // Save focus session
     await createFocusSession({
@@ -87,13 +121,19 @@ export default function FocusPage() {
 
     // Mark task as completed
     await updateTask(task.id, { status: 'completed' });
-  }, [firebaseUser, task, elapsed, completed]);
+  }, [firebaseUser, task, elapsed, isRunning, completed]);
 
   const handleExit = async () => {
-    if (elapsed > 60 && firebaseUser && task && !completed) {
+    let finalElapsed = elapsed;
+    if (isRunning && !completed) {
+      const diffSeconds = Math.floor((new Date().getTime() - lastResumeTimeRef.current.getTime()) / 1000);
+      finalElapsed = accumulatedTimeRef.current + diffSeconds;
+    }
+
+    if (finalElapsed > 60 && firebaseUser && task && !completed) {
       // Save partial session
       const endTime = new Date();
-      const durationMinutes = Math.round(elapsed / 60);
+      const durationMinutes = Math.round(finalElapsed / 60);
       await createFocusSession({
         userId: firebaseUser.uid,
         taskId: task.id,
@@ -105,6 +145,20 @@ export default function FocusPage() {
       });
     }
     router.push('/dashboard');
+  };
+
+  const toggleTimer = () => {
+    if (isRunning) {
+      // Pausing: lock in current elapsed time
+      const diffSeconds = Math.floor((new Date().getTime() - lastResumeTimeRef.current.getTime()) / 1000);
+      accumulatedTimeRef.current += diffSeconds;
+      setElapsed(accumulatedTimeRef.current);
+      setIsRunning(false);
+    } else {
+      // Resuming: start new timestamp interval
+      lastResumeTimeRef.current = new Date();
+      setIsRunning(true);
+    }
   };
 
   // SVG timer ring
@@ -230,7 +284,7 @@ export default function FocusPage() {
               ? 'border border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white w-40'
               : 'w-40'
           }
-          onClick={() => setIsRunning(!isRunning)}
+          onClick={toggleTimer}
         >
           {isRunning ? (
             <>
