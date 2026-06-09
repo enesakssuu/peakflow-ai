@@ -3,6 +3,7 @@
 // ============================================================
 
 import { NextResponse } from 'next/server';
+import nodemailer from 'nodemailer';
 
 export async function POST(req: Request) {
   try {
@@ -13,14 +14,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const apiKey = process.env.RESEND_API_KEY;
+    const smtpUser = process.env.SMTP_USER;
+    const smtpPass = process.env.SMTP_PASS; // 16-character App Password for Gmail
+    const resendApiKey = process.env.RESEND_API_KEY;
 
-    if (!apiKey) {
-      console.warn('RESEND_API_KEY is not configured in environment variables. Email invitation skipped.');
+    if (!smtpUser && !smtpPass && !resendApiKey) {
+      console.warn('Neither SMTP credentials nor RESEND_API_KEY are configured in environment variables. Email invitation skipped.');
       return NextResponse.json({
         success: true,
         emailSent: false,
-        message: 'RESEND_API_KEY is missing. Invitation registered in database only.'
+        message: 'No email credentials (SMTP or Resend) configured. Invitation registered in database only.'
       });
     }
 
@@ -135,31 +138,61 @@ export async function POST(req: Request) {
       </html>
     `;
 
-    // Call Resend REST API directly via fetch
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'PeakFlow AI <onboarding@resend.dev>',
+    // 1. Prefer SMTP (Gmail app passwords, etc.) as it works without custom domain verification
+    if (smtpUser && smtpPass) {
+      const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+      const smtpPort = parseInt(process.env.SMTP_PORT || '465');
+
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465,
+        auth: {
+          user: smtpUser,
+          pass: smtpPass,
+        },
+      });
+
+      const mailOptions = {
+        from: `"PeakFlow AI" <${smtpUser}>`,
         to: invitedEmail,
         subject: `Invitation to join ${workspaceName} on PeakFlow AI`,
         html: htmlContent,
-      }),
-    });
+      };
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error('Resend API error response:', data);
-      return NextResponse.json({ error: data.message || 'Failed to send email' }, { status: response.status });
+      await transporter.sendMail(mailOptions);
+      return NextResponse.json({ success: true, emailSent: true, provider: 'smtp' });
     }
 
-    return NextResponse.json({ success: true, emailSent: true, id: data.id });
+    // 2. Fallback to Resend API
+    if (resendApiKey) {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'PeakFlow AI <onboarding@resend.dev>',
+          to: invitedEmail,
+          subject: `Invitation to join ${workspaceName} on PeakFlow AI`,
+          html: htmlContent,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('Resend API error response:', data);
+        return NextResponse.json({ error: data.message || 'Failed to send email' }, { status: response.status });
+      }
+
+      return NextResponse.json({ success: true, emailSent: true, provider: 'resend', id: data.id });
+    }
+
+    return NextResponse.json({ error: 'No email service configuration found' }, { status: 500 });
   } catch (err: any) {
-    console.error('Workspace invitation sync error:', err);
+    console.error('Workspace invitation email route error:', err);
     return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
   }
 }
