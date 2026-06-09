@@ -111,27 +111,8 @@ export default function TeamDashboardPage() {
       const mom = calculateMomentumScore(wTasks, wSessions, []);
       setMomentum(mom);
 
-      // 3. Fetch active focus sessions for this workspace (where endTime == null)
-      const q = query(
-        collection(db, 'focusSessions'),
-        where('workspaceId', '==', currentWorkspaceId),
-        where('endTime', '==', null)
-      );
-      const snap = await getDocs(q);
-      const activeList = snap.docs.map((d) => {
-        const data = d.data();
-        return {
-          id: d.id,
-          userId: data.userId,
-          taskId: data.taskId,
-          taskTitle: data.taskTitle,
-          startTime: data.startTime.toDate(),
-          endTime: null,
-          duration: data.duration,
-          completed: data.completed,
-          workspaceId: data.workspaceId,
-        };
-      });
+      // 3. Get active focus sessions for this workspace (where endTime === null)
+      const activeList = wSessions.filter((s) => s.endTime === null);
 
       // Filter out sessions older than 3 hours to prevent stale active state
       const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);

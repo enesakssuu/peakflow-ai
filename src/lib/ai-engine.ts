@@ -117,7 +117,7 @@ export function buildUserContext(
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   const completedToday = tasks.filter(
-    (t) => t.status === 'completed' && t.createdAt >= todayStart
+    (t) => t.status === 'completed' && (t.completedAt || t.createdAt) >= todayStart
   ).length;
 
   const todaySessions = sessions.filter((s) => s.startTime >= todayStart);
@@ -141,7 +141,11 @@ export function buildUserContext(
 function calculateStreak(tasks: Task[]): number {
   const completed = tasks
     .filter((t) => t.status === 'completed')
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    .sort((a, b) => {
+      const aTime = (a.completedAt || a.createdAt).getTime();
+      const bTime = (b.completedAt || b.createdAt).getTime();
+      return bTime - aTime;
+    });
 
   if (completed.length === 0) return 0;
 
@@ -154,9 +158,10 @@ function calculateStreak(tasks: Task[]): number {
     const dayEnd = new Date(checkDate);
     dayEnd.setDate(dayEnd.getDate() + 1);
 
-    const hasCompleted = completed.some(
-      (t) => t.createdAt >= dayStart && t.createdAt < dayEnd
-    );
+    const hasCompleted = completed.some((t) => {
+      const compDate = t.completedAt || t.createdAt;
+      return compDate >= dayStart && compDate < dayEnd;
+    });
 
     if (hasCompleted) {
       streak++;
@@ -242,7 +247,7 @@ export function calculateMomentumScore(
 
   // Today's metrics
   const completedToday = tasks.filter(
-    (t) => t.status === 'completed' && t.createdAt >= todayStart
+    (t) => t.status === 'completed' && (t.completedAt || t.createdAt) >= todayStart
   ).length;
   const focusToday = sessions
     .filter((s) => s.startTime >= todayStart)
@@ -251,7 +256,7 @@ export function calculateMomentumScore(
 
   // Weekly metrics
   const completedWeek = tasks.filter(
-    (t) => t.status === 'completed' && t.createdAt >= weekAgo
+    (t) => t.status === 'completed' && (t.completedAt || t.createdAt) >= weekAgo
   ).length;
 
   // Score components (each 0-25)
@@ -268,8 +273,8 @@ export function calculateMomentumScore(
   const completedYesterday = tasks.filter(
     (t) =>
       t.status === 'completed' &&
-      t.createdAt >= yesterdayStart &&
-      t.createdAt < todayStart
+      (t.completedAt || t.createdAt) >= yesterdayStart &&
+      (t.completedAt || t.createdAt) < todayStart
   ).length;
 
   const trend: 'up' | 'down' | 'stable' =
@@ -305,7 +310,7 @@ export function computeWeeklyInsights(
 
   const weekSessions = sessions.filter((s) => s.startTime >= weekAgo);
   const weekTasks = tasks.filter(
-    (t) => t.status === 'completed' && t.createdAt >= weekAgo
+    (t) => t.status === 'completed' && (t.completedAt || t.createdAt) >= weekAgo
   );
   const weekReviews = reviews.filter((r) => r.createdAt >= weekAgo);
 
@@ -361,7 +366,8 @@ function getMostProductiveDay(
   const dayCounts: Record<string, number> = {};
 
   tasks.forEach((t) => {
-    const day = dayNames[t.createdAt.getDay()];
+    const compDate = t.completedAt || t.createdAt;
+    const day = dayNames[compDate.getDay()];
     dayCounts[day] = (dayCounts[day] || 0) + 1;
   });
 

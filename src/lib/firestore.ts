@@ -29,7 +29,9 @@ import type { User, Task, FocusSession, DailyReview, TaskStatus, Workspace, Work
 function toDate(ts: unknown): Date {
   if (ts instanceof Timestamp) return ts.toDate();
   if (ts instanceof Date) return ts;
-  return new Date(ts as string);
+  if (!ts) return new Date();
+  const d = new Date(ts as string);
+  return isNaN(d.getTime()) ? new Date() : d;
 }
 
 // ── Users ────────────────────────────────────────────────────
