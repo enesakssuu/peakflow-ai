@@ -160,6 +160,23 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       userData.name,
       role
     );
+
+    // Call API to send email invitation
+    try {
+      await fetch('/api/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: currentWorkspaceId,
+          workspaceName: activeW.name,
+          invitedEmail: email.toLowerCase().trim(),
+          invitedByUserName: userData.name,
+          role,
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to trigger email invite:', err);
+    }
     
     // Refresh workspace details to show the new invitation immediately
     await fetchCurrentWorkspaceDetails();
