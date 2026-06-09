@@ -376,6 +376,32 @@ export async function getUserInvitations(email: string): Promise<WorkspaceInvita
   });
 }
 
+export async function getWorkspaceInvitations(workspaceId: string): Promise<WorkspaceInvitation[]> {
+  const q = query(
+    collection(db(), 'workspaceInvitations'),
+    where('workspaceId', '==', workspaceId)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      workspaceId: data.workspaceId,
+      workspaceName: data.workspaceName,
+      invitedEmail: data.invitedEmail,
+      invitedByUserId: data.invitedByUserId,
+      invitedByUserName: data.invitedByUserName,
+      role: data.role,
+      status: data.status,
+      createdAt: toDate(data.createdAt),
+    };
+  });
+}
+
+export async function deleteInvitation(inviteId: string): Promise<void> {
+  await deleteDoc(doc(db(), 'workspaceInvitations', inviteId));
+}
+
 export async function updateInvitationStatus(
   inviteId: string,
   status: 'accepted' | 'declined',

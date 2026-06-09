@@ -13,6 +13,8 @@ import {
   removeWorkspaceMember,
   createInvitation,
   getUserInvitations,
+  getWorkspaceInvitations,
+  deleteInvitation,
   updateInvitationStatus,
 } from '@/lib/firestore';
 import type { Workspace, WorkspaceMember, WorkspaceInvitation } from '@/types';
@@ -23,6 +25,7 @@ interface WorkspaceContextType {
   workspaces: Workspace[];
   members: WorkspaceMember[];
   pendingInvitations: WorkspaceInvitation[];
+  sentInvitations: WorkspaceInvitation[];
   loading: boolean;
   switchWorkspace: (id: string) => void;
   createTeamWorkspace: (name: string) => Promise<string>;
@@ -30,6 +33,7 @@ interface WorkspaceContextType {
   removeMember: (userId: string) => Promise<void>;
   acceptInvite: (inviteId: string) => Promise<void>;
   declineInvite: (inviteId: string) => Promise<void>;
+  cancelInvite: (inviteId: string) => Promise<void>;
   refreshWorkspaceData: () => Promise<void>;
 }
 
@@ -41,6 +45,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [pendingInvitations, setPendingInvitations] = useState<WorkspaceInvitation[]>([]);
+  const [sentInvitations, setSentInvitations] = useState<WorkspaceInvitation[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Switch workspace selection and store it in localStorage for session persistence
@@ -75,18 +80,23 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     }
   }, [firebaseUser]);
 
-  // Fetch members of the current selected workspace
+  // Fetch members & sent invitations of the current selected workspace
   const fetchCurrentWorkspaceDetails = useCallback(async () => {
     if (currentWorkspaceId === 'personal' || !firebaseUser) {
       setMembers([]);
+      setSentInvitations([]);
       return;
     }
 
     try {
-      const mList = await getWorkspaceMembers(currentWorkspaceId);
+      const [mList, invList] = await Promise.all([
+        getWorkspaceMembers(currentWorkspaceId),
+        getWorkspaceInvitations(currentWorkspaceId)
+      ]);
       setMembers(mList);
+      setSentInvitations(invList);
     } catch (err) {
-      console.error('Error fetching workspace members:', err);
+      console.error('Error fetching workspace details:', err);
     }
   }, [currentWorkspaceId, firebaseUser]);
 
@@ -114,6 +124,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       setWorkspaces([]);
       setMembers([]);
       setPendingInvitations([]);
+      setSentInvitations([]);
       setLoading(false);
     }
   }, [firebaseUser, refreshWorkspaceData]);
@@ -149,12 +160,21 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       userData.name,
       role
     );
+    
+    // Refresh workspace details to show the new invitation immediately
+    await fetchCurrentWorkspaceDetails();
   };
 
   // Remove a member from the workspace
   const removeMember = async (userId: string) => {
     if (currentWorkspaceId === 'personal') return;
     await removeWorkspaceMember(currentWorkspaceId, userId);
+    await fetchCurrentWorkspaceDetails();
+  };
+
+  // Cancel/delete a sent invitation
+  const cancelInvite = async (inviteId: string) => {
+    await deleteInvitation(inviteId);
     await fetchCurrentWorkspaceDetails();
   };
 
@@ -182,6 +202,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         workspaces,
         members,
         pendingInvitations,
+        sentInvitations,
         loading,
         switchWorkspace,
         createTeamWorkspace,
@@ -189,6 +210,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         removeMember,
         acceptInvite,
         declineInvite,
+        cancelInvite,
         refreshWorkspaceData,
       }}
     >

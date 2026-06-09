@@ -33,11 +33,13 @@ export default function WorkspacePage() {
     workspaces,
     members,
     pendingInvitations,
+    sentInvitations,
     createTeamWorkspace,
     inviteUser,
     removeMember,
     acceptInvite,
     declineInvite,
+    cancelInvite,
     switchWorkspace,
   } = useWorkspace();
 
@@ -255,10 +257,11 @@ export default function WorkspacePage() {
                 <CardHeader>
                   <CardTitle className="text-lg font-bold flex items-center gap-2">
                     <Users className="w-5 h-5 text-accent" />
-                    Workspace Members ({members.length})
+                    Workspace Members & Invitations ({members.length + sentInvitations.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="divide-y divide-border/60">
+                  {/* Active Members */}
                   {members.map((member) => (
                     <div
                       key={member.id}
@@ -269,9 +272,15 @@ export default function WorkspacePage() {
                           {member.userName.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-foreground">
-                            {member.userName}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-foreground">
+                              {member.userName}
+                            </span>
+                            <span className="flex items-center gap-1 text-[10px] text-success font-semibold bg-success/10 px-2 py-0.5 rounded-full">
+                              <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                              Joined
+                            </span>
+                          </div>
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {member.userEmail}
                           </p>
@@ -293,6 +302,56 @@ export default function WorkspacePage() {
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Sent Invitations (ekibin altında) */}
+                  {sentInvitations.map((invite) => (
+                    <div
+                      key={invite.id}
+                      className="flex items-center justify-between py-4 last:pb-0"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-secondary/60 flex items-center justify-center text-sm font-semibold text-muted-foreground shrink-0 border border-border/40">
+                          @
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-muted-foreground">
+                              {invite.invitedEmail}
+                            </span>
+                            {invite.status === 'pending' ? (
+                              <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-semibold bg-secondary/80 px-2 py-0.5 rounded-full">
+                                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
+                                Pending
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 text-[10px] text-destructive font-semibold bg-destructive/10 px-2 py-0.5 rounded-full">
+                                <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                                Declined
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                            Invited by {invite.invitedByUserName || 'someone'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline" className="capitalize text-[10px] text-muted-foreground border-dashed">
+                          {invite.role}
+                        </Badge>
+                        {canManageInvitations && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => cancelInvite(invite.id)}
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/5 shrink-0"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
