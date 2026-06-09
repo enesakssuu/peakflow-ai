@@ -12,6 +12,7 @@ export interface User {
   goal: string;
   onboardingCompleted: boolean;
   createdAt: Date;
+  username?: string;
 }
 
 export interface Task {

@@ -16,6 +16,7 @@ import {
   getWorkspaceInvitations,
   deleteInvitation,
   updateInvitationStatus,
+  getUserByUsername,
 } from '@/lib/firestore';
 import type { Workspace, WorkspaceMember, WorkspaceInvitation } from '@/types';
 
@@ -144,18 +145,32 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     return wId;
   };
 
-  // Invite a user to the current workspace
-  const inviteUser = async (email: string, role: 'admin' | 'member') => {
+  // Invite a user to the current workspace (supports email or username)
+  const inviteUser = async (identifier: string, role: 'admin' | 'member') => {
     if (currentWorkspaceId === 'personal' || !firebaseUser || !userData) {
       throw new Error('No active team workspace to invite users to');
     }
     const activeW = workspaces.find((w) => w.id === currentWorkspaceId);
     if (!activeW) throw new Error('Workspace not found');
 
+    let targetEmail = identifier.trim().toLowerCase();
+    
+    // Check if input is a username (doesn't contain a dot or starts with '@')
+    const isEmail = targetEmail.includes('@') && targetEmail.includes('.');
+    
+    if (!isEmail) {
+      const cleanedUsername = targetEmail.replace(/^@/, '').trim();
+      const targetUser = await getUserByUsername(cleanedUsername);
+      if (!targetUser) {
+        throw new Error(`Kullanıcı adı (@${cleanedUsername}) bulunamadı`);
+      }
+      targetEmail = targetUser.email;
+    }
+
     await createInvitation(
       currentWorkspaceId,
       activeW.name,
-      email,
+      targetEmail,
       firebaseUser.uid,
       userData.name,
       role
@@ -169,7 +184,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({
           workspaceId: currentWorkspaceId,
           workspaceName: activeW.name,
-          invitedEmail: email.toLowerCase().trim(),
+          invitedEmail: targetEmail,
           invitedByUserName: userData.name,
           role,
         }),

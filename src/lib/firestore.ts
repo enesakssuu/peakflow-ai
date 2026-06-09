@@ -55,6 +55,7 @@ export async function getUser(uid: string): Promise<User | null> {
     goal: data.goal || '',
     onboardingCompleted: data.onboardingCompleted || false,
     createdAt: toDate(data.createdAt),
+    username: data.username || '',
   };
 }
 
@@ -62,6 +63,37 @@ export async function updateUser(uid: string, data: Partial<User>): Promise<void
   const { id, ...rest } = data as Record<string, unknown>;
   void id;
   await updateDoc(doc(db(), 'users', uid), rest);
+}
+
+export async function getUserByUsername(username: string): Promise<User | null> {
+  const q = query(
+    collection(db(), 'users'),
+    where('username', '==', username.toLowerCase().trim())
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  
+  const d = snap.docs[0];
+  const data = d.data();
+  return {
+    id: d.id,
+    name: data.name,
+    email: data.email,
+    profession: data.profession || '',
+    goal: data.goal || '',
+    onboardingCompleted: data.onboardingCompleted || false,
+    createdAt: toDate(data.createdAt),
+    username: data.username || '',
+  };
+}
+
+export async function isUsernameAvailable(username: string): Promise<boolean> {
+  const q = query(
+    collection(db(), 'users'),
+    where('username', '==', username.toLowerCase().trim())
+  );
+  const snap = await getDocs(q);
+  return snap.empty;
 }
 
 // ── Tasks ────────────────────────────────────────────────────
