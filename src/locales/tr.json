@@ -12,7 +12,8 @@
     "profile": "Profil Ayarları",
     "sign_out": "Çıkış Yap",
     "personal_space": "Kişisel Alan",
-    "create_team_workspace": "Ekip Alanı Oluştur"
+    "create_team_workspace": "Ekip Alanı Oluştur",
+    "ai_coach": "Yapay Zeka Koçu"
   },
   "dashboard": {
     "preparing": "Çalışma alanınız hazırlanıyor...",

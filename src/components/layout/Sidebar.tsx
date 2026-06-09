@@ -25,7 +25,8 @@ import {
   Users,
   Plus,
   ChevronsUpDown,
-  User
+  User,
+  Brain
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -55,6 +56,7 @@ export default function Sidebar() {
         { href: '/tasks', label: t('sidebar.tasks'), icon: ListTodo },
         { href: '/reflection', label: t('sidebar.reflection'), icon: Heart },
         { href: '/insights', label: t('sidebar.insights'), icon: BarChart3 },
+        { href: '/ai-coach', label: t('sidebar.ai_coach'), icon: Brain },
         { href: '/integrations', label: t('sidebar.integrations'), icon: Link2 },
         { href: '/profile', label: t('sidebar.profile'), icon: User },
       ]
@@ -62,6 +64,7 @@ export default function Sidebar() {
         { href: '/team-dashboard', label: t('sidebar.team_dashboard'), icon: LayoutDashboard },
         { href: '/tasks', label: t('sidebar.workspace_tasks'), icon: ListTodo },
         { href: '/workspace', label: t('sidebar.workspace_settings'), icon: Settings },
+        { href: '/ai-coach', label: t('sidebar.ai_coach'), icon: Brain },
         { href: '/integrations', label: t('sidebar.workspace_sync'), icon: Link2 },
         { href: '/profile', label: t('sidebar.profile'), icon: User },
       ];

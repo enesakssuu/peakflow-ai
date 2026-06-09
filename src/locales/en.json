@@ -12,7 +12,8 @@
     "profile": "Profile Settings",
     "sign_out": "Sign Out",
     "personal_space": "Personal Space",
-    "create_team_workspace": "Create Team Workspace"
+    "create_team_workspace": "Create Team Workspace",
+    "ai_coach": "AI Coach"
   },
   "dashboard": {
     "preparing": "Preparing your workspace...",

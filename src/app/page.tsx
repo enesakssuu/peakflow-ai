@@ -139,33 +139,11 @@ export default function HomePage() {
   const { firebaseUser } = useAuth();
   const { language, setLanguage } = useLanguage();
 
-  // Dark/Light Theme state
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-
   // Interactive Demo state
   const [activeFeatureTab, setActiveFeatureTab] = useState<'personal' | 'team'>('personal');
   const [interactiveMomentum, setInteractiveMomentum] = useState(64);
   const [activeTaskTitle, setActiveTaskTitle] = useState('Brand Strategy Review');
   const [activeTaskDesc, setActiveTaskDesc] = useState('Evaluate visual assets and Q3 messaging guidelines.');
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const isDark = document.documentElement.classList.contains('dark');
-      setTheme(isDark ? 'dark' : 'light');
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const next = theme === 'light' ? 'dark' : 'light';
-    setTheme(next);
-    if (next === 'dark') {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('peakflow_theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('peakflow_theme', 'light');
-    }
-  };
 
   const currentCopy = dictionary[language] || dictionary.en;
 
@@ -200,34 +178,27 @@ export default function HomePage() {
                 <Globe className="w-3.5 h-3.5" />
                 <span className="uppercase">{language}</span>
               </button>
-              <div className="absolute right-0 top-full mt-1.5 hidden group-hover:block bg-card border border-border rounded-xl shadow-lg p-1 animate-scale-in min-w-[90px]">
-                <button
-                  onClick={() => setLanguage('tr')}
-                  className={`w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-secondary transition-colors cursor-pointer font-medium ${
-                    language === 'tr' ? 'text-accent font-bold bg-accent/5' : ''
-                  }`}
-                >
-                  Türkçe
-                </button>
-                <button
-                  onClick={() => setLanguage('en')}
-                  className={`w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-secondary transition-colors cursor-pointer font-medium ${
-                    language === 'en' ? 'text-accent font-bold bg-accent/5' : ''
-                  }`}
-                >
-                  English
-                </button>
+              <div className="absolute right-0 top-full pt-1.5 hidden group-hover:block min-w-[90px] z-50">
+                <div className="bg-card border border-border rounded-xl shadow-lg p-1 animate-scale-in">
+                  <button
+                    onClick={() => setLanguage('tr')}
+                    className={`w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-secondary transition-colors cursor-pointer font-medium ${
+                      language === 'tr' ? 'text-accent font-bold bg-accent/5' : ''
+                    }`}
+                  >
+                    Türkçe
+                  </button>
+                  <button
+                    onClick={() => setLanguage('en')}
+                    className={`w-full text-left text-xs px-2.5 py-1.5 rounded-lg hover:bg-secondary transition-colors cursor-pointer font-medium ${
+                      language === 'en' ? 'text-accent font-bold bg-accent/5' : ''
+                    }`}
+                  >
+                    English
+                  </button>
+                </div>
               </div>
             </div>
-
-            {/* Dark / Light Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-xl border border-border/80 bg-secondary/20 hover:border-accent/40 transition-all cursor-pointer text-foreground"
-              title="Toggle theme"
-            >
-              {theme === 'dark' ? <Sun className="w-4 h-4 text-warning" /> : <Moon className="w-4 h-4 text-primary" />}
-            </button>
 
             {/* Action Buttons */}
             {firebaseUser ? (
