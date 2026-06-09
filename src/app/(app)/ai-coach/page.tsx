@@ -81,8 +81,8 @@ export default function AICoachPage() {
             : "Based on your tasks, your priority is to finalize the API sync routes. Your energy is typically highest in the morning, so I recommend starting a 25-minute focus session now.",
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           action: {
-            text: isTr ? "Odaklanma Oturumunu Başlat" : "Start Focus Session",
-            href: "/focus"
+            text: isTr ? "Yeni Görev Oluştur" : "Create New Task",
+            href: "/tasks?new=true"
           }
         };
       } else if (type === 'week') {
@@ -112,8 +112,8 @@ export default function AICoachPage() {
                 "Commit to a 15-minute 'zero-expectations' draft. Just write bullet points. No formatting."
               ],
           action: {
-            text: isTr ? "15 Dakikalık Sayaç Başlat" : "Start 15-min Focus Timer",
-            href: "/focus"
+            text: isTr ? "Göreve Dönüştür ve Başla" : "Convert to Task & Start",
+            href: "/tasks?new=true"
           }
         };
       }
@@ -149,8 +149,8 @@ export default function AICoachPage() {
           : "I understand completely. Let's organize this step-by-step. To maintain momentum and avoid burnout, I recommend breaking this into micro-tasks of under 15 minutes each. Would you like to start a focus session for the first task?",
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         action: {
-          text: isTr ? "Odaklanma Moduna Git" : "Go to Focus Mode",
-          href: "/focus"
+          text: isTr ? "Yeni Görev Ekle" : "Add New Task",
+          href: "/tasks?new=true"
         }
       };
       setMessages(prev => [...prev, coachMsg]);

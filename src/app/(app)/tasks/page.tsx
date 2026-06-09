@@ -4,7 +4,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { getTasks, createTask, updateTask, deleteTask } from '@/lib/firestore';
@@ -14,10 +14,11 @@ import { Button } from '@/components/ui/button';
 import { Plus, ListTodo, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Task, TaskStatus } from '@/types';
+import { useSearchParams } from 'next/navigation';
 
 type FilterType = 'all' | 'active' | 'completed';
 
-export default function TasksPage() {
+function TasksContent() {
   const { firebaseUser } = useAuth();
   const { currentWorkspaceId } = useWorkspace();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -25,6 +26,13 @@ export default function TasksPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filter, setFilter] = useState<FilterType>('all');
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('new') === 'true') {
+      setDialogOpen(true);
+    }
+  }, [searchParams]);
 
   const loadTasks = useCallback(async () => {
     if (!firebaseUser) return;
@@ -183,5 +191,17 @@ export default function TasksPage() {
         onSave={handleSave}
       />
     </div>
+  );
+}
+
+export default function TasksPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-3 border-accent/20 border-t-accent rounded-full animate-spin" />
+      </div>
+    }>
+      <TasksContent />
+    </Suspense>
   );
 }
