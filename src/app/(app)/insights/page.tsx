@@ -6,6 +6,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useWorkspace } from '@/context/WorkspaceContext';
 import { getTasks, getFocusSessions, getDailyReviews } from '@/lib/firestore';
 import { computeWeeklyInsights } from '@/lib/ai-engine';
 import InsightCard from '@/components/insights/InsightCard';
@@ -24,15 +25,17 @@ import type { WeeklyInsights } from '@/types';
 
 export default function InsightsPage() {
   const { firebaseUser } = useAuth();
+  const { currentWorkspaceId } = useWorkspace();
   const [insights, setInsights] = useState<WeeklyInsights | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadInsights = useCallback(async () => {
     if (!firebaseUser) return;
     try {
+      const workspaceScope = currentWorkspaceId === 'personal' ? null : currentWorkspaceId;
       const [tasks, sessions, reviews] = await Promise.all([
-        getTasks(firebaseUser.uid),
-        getFocusSessions(firebaseUser.uid),
+        getTasks(firebaseUser.uid, workspaceScope),
+        getFocusSessions(firebaseUser.uid, workspaceScope),
         getDailyReviews(firebaseUser.uid),
       ]);
 
@@ -43,7 +46,7 @@ export default function InsightsPage() {
     } finally {
       setLoading(false);
     }
-  }, [firebaseUser]);
+  }, [firebaseUser, currentWorkspaceId]);
 
   useEffect(() => {
     loadInsights();

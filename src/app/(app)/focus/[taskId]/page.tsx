@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { getTasks, updateTask, createFocusSession } from '@/lib/firestore';
+import { getTask, updateTask, createFocusSession } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { Pause, Play, CheckCircle2, X, Zap } from 'lucide-react';
 import type { Task } from '@/types';
@@ -32,8 +32,7 @@ export default function FocusPage() {
   useEffect(() => {
     const loadTask = async () => {
       if (!firebaseUser) return;
-      const tasks = await getTasks(firebaseUser.uid);
-      const found = tasks.find((t) => t.id === taskId);
+      const found = await getTask(taskId);
       if (found) {
         setTask(found);
       }
@@ -117,6 +116,7 @@ export default function FocusPage() {
       endTime,
       duration: durationMinutes || 1,
       completed: true,
+      workspaceId: task.workspaceId || null,
     });
 
     // Mark task as completed
@@ -142,6 +142,7 @@ export default function FocusPage() {
         endTime,
         duration: durationMinutes || 1,
         completed: false,
+        workspaceId: task.workspaceId || null,
       });
     }
     router.push('/dashboard');

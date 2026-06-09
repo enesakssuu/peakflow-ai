@@ -6,6 +6,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useWorkspace } from '@/context/WorkspaceContext';
 import { getTasks, createTask, updateTask, deleteTask } from '@/lib/firestore';
 import TaskCard from '@/components/tasks/TaskCard';
 import TaskDialog from '@/components/tasks/TaskDialog';
@@ -18,6 +19,7 @@ type FilterType = 'all' | 'active' | 'completed';
 
 export default function TasksPage() {
   const { firebaseUser } = useAuth();
+  const { currentWorkspaceId } = useWorkspace();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -27,14 +29,14 @@ export default function TasksPage() {
   const loadTasks = useCallback(async () => {
     if (!firebaseUser) return;
     try {
-      const data = await getTasks(firebaseUser.uid);
+      const data = await getTasks(firebaseUser.uid, currentWorkspaceId === 'personal' ? null : currentWorkspaceId);
       setTasks(data);
     } catch (error) {
       console.error('Error loading tasks:', error);
     } finally {
       setLoading(false);
     }
-  }, [firebaseUser]);
+  }, [firebaseUser, currentWorkspaceId]);
 
   useEffect(() => {
     loadTasks();
@@ -46,7 +48,10 @@ export default function TasksPage() {
     if (editingTask) {
       await updateTask(editingTask.id, data);
     } else {
-      await createTask(firebaseUser.uid, data);
+      await createTask(firebaseUser.uid, {
+        ...data,
+        workspaceId: currentWorkspaceId === 'personal' ? null : currentWorkspaceId,
+      });
     }
     setEditingTask(null);
     await loadTasks();

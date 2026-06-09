@@ -6,6 +6,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useWorkspace } from '@/context/WorkspaceContext';
 import { getTasks, getFocusSessions, getDailyReviews } from '@/lib/firestore';
 import { getRecommendedTask, calculateMomentumScore, buildUserContext } from '@/lib/ai-engine';
 import GreetingHeader from '@/components/dashboard/GreetingHeader';
@@ -17,6 +18,7 @@ import type { Task, FocusSession, DailyReview, TaskRecommendation, MomentumData 
 
 export default function DashboardPage() {
   const { firebaseUser, userData } = useAuth();
+  const { currentWorkspaceId } = useWorkspace();
   const [recommendation, setRecommendation] = useState<TaskRecommendation | null>(null);
   const [momentum, setMomentum] = useState<MomentumData>({
     score: 0,
@@ -32,9 +34,10 @@ export default function DashboardPage() {
     if (!firebaseUser) return;
 
     try {
+      const workspaceScope = currentWorkspaceId === 'personal' ? null : currentWorkspaceId;
       const [tasks, sessions, reviews] = await Promise.all([
-        getTasks(firebaseUser.uid),
-        getFocusSessions(firebaseUser.uid),
+        getTasks(firebaseUser.uid, workspaceScope),
+        getFocusSessions(firebaseUser.uid, workspaceScope),
         getDailyReviews(firebaseUser.uid),
       ]);
 
@@ -56,7 +59,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [firebaseUser]);
+  }, [firebaseUser, currentWorkspaceId]);
 
   useEffect(() => {
     loadDashboardData();

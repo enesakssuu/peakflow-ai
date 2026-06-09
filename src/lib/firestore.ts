@@ -22,7 +22,7 @@ import { getFirebaseDb } from './firebase';
 function db() {
   return getFirebaseDb();
 }
-import type { User, Task, FocusSession, DailyReview, TaskStatus } from '@/types';
+import type { User, Task, FocusSession, DailyReview, TaskStatus, Workspace, WorkspaceMember, WorkspaceInvitation, Integration } from '@/types';
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -66,7 +66,15 @@ export async function updateUser(uid: string, data: Partial<User>): Promise<void
 
 export async function createTask(
   userId: string,
-  data: { title: string; estimatedDuration: number; impactScore: number }
+  data: { 
+    title: string; 
+    estimatedDuration: number; 
+    impactScore: number;
+    workspaceId?: string | null;
+    assignedToUserId?: string | null;
+    source?: 'local' | 'plane' | 'trello';
+    sourceId?: string | null;
+  }
 ): Promise<string> {
   const ref = doc(collection(db(), 'tasks'));
   await setDoc(ref, {
@@ -76,18 +84,29 @@ export async function createTask(
     impactScore: data.impactScore,
     status: 'todo' as TaskStatus,
     createdAt: serverTimestamp(),
+    workspaceId: data.workspaceId || null,
+    assignedToUserId: data.assignedToUserId || null,
+    source: data.source || 'local',
+    sourceId: data.sourceId || null,
   });
   return ref.id;
 }
 
-export async function getTasks(userId: string): Promise<Task[]> {
-  const q = query(
-    collection(db(), 'tasks'),
-    where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
-  );
+export async function getTasks(userId: string, workspaceId: string | null = null): Promise<Task[]> {
+  let q;
+  if (workspaceId) {
+    q = query(
+      collection(db(), 'tasks'),
+      where('workspaceId', '==', workspaceId)
+    );
+  } else {
+    q = query(
+      collection(db(), 'tasks'),
+      where('userId', '==', userId)
+    );
+  }
   const snap = await getDocs(q);
-  return snap.docs.map((d) => {
+  const tasks = snap.docs.map((d) => {
     const data = d.data();
     return {
       id: d.id,
@@ -97,8 +116,39 @@ export async function getTasks(userId: string): Promise<Task[]> {
       impactScore: data.impactScore,
       status: data.status as TaskStatus,
       createdAt: toDate(data.createdAt),
+      workspaceId: data.workspaceId || null,
+      source: data.source || 'local',
+      sourceId: data.sourceId || null,
+      assignedToUserId: data.assignedToUserId || null,
     };
   });
+
+  // Client-side filter to prevent index issues
+  const filtered = workspaceId 
+    ? tasks 
+    : tasks.filter((t) => !t.workspaceId);
+
+  // Client-side sort by createdAt descending
+  return filtered.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+}
+
+export async function getTask(taskId: string): Promise<Task | null> {
+  const snap = await getDoc(doc(db(), 'tasks', taskId));
+  if (!snap.exists()) return null;
+  const data = snap.data();
+  return {
+    id: snap.id,
+    userId: data.userId,
+    title: data.title,
+    estimatedDuration: data.estimatedDuration,
+    impactScore: data.impactScore,
+    status: data.status as TaskStatus,
+    createdAt: toDate(data.createdAt),
+    workspaceId: data.workspaceId || null,
+    source: data.source || 'local',
+    sourceId: data.sourceId || null,
+    assignedToUserId: data.assignedToUserId || null,
+  };
 }
 
 export async function updateTask(taskId: string, data: Partial<Task>): Promise<void> {
@@ -125,18 +175,26 @@ export async function createFocusSession(
     endTime: data.endTime ? Timestamp.fromDate(data.endTime instanceof Date ? data.endTime : new Date(data.endTime)) : null,
     duration: data.duration,
     completed: data.completed,
+    workspaceId: data.workspaceId || null,
   });
   return ref.id;
 }
 
-export async function getFocusSessions(userId: string): Promise<FocusSession[]> {
-  const q = query(
-    collection(db(), 'focusSessions'),
-    where('userId', '==', userId),
-    orderBy('startTime', 'desc')
-  );
+export async function getFocusSessions(userId: string, workspaceId: string | null = null): Promise<FocusSession[]> {
+  let q;
+  if (workspaceId) {
+    q = query(
+      collection(db(), 'focusSessions'),
+      where('workspaceId', '==', workspaceId)
+    );
+  } else {
+    q = query(
+      collection(db(), 'focusSessions'),
+      where('userId', '==', userId)
+    );
+  }
   const snap = await getDocs(q);
-  return snap.docs.map((d) => {
+  const sessions = snap.docs.map((d) => {
     const data = d.data();
     return {
       id: d.id,
@@ -147,8 +205,17 @@ export async function getFocusSessions(userId: string): Promise<FocusSession[]> 
       endTime: data.endTime ? toDate(data.endTime) : null,
       duration: data.duration,
       completed: data.completed,
+      workspaceId: data.workspaceId || null,
     };
   });
+
+  // Client-side filter to prevent index issues
+  const filtered = workspaceId 
+    ? sessions 
+    : sessions.filter((s) => !s.workspaceId);
+
+  // Client-side sort by startTime descending
+  return filtered.sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
 }
 
 // ── Daily Reviews ────────────────────────────────────────────
@@ -185,4 +252,211 @@ export async function getDailyReviews(userId: string): Promise<DailyReview[]> {
       createdAt: toDate(data.createdAt),
     };
   });
+}
+
+// ── Workspaces ───────────────────────────────────────────────
+
+export async function createWorkspace(name: string, ownerId: string, ownerName: string, ownerEmail: string): Promise<string> {
+  const ref = doc(collection(db(), 'workspaces'));
+  const workspaceId = ref.id;
+  await setDoc(ref, {
+    name,
+    ownerId,
+    createdAt: serverTimestamp(),
+  });
+  // Add owner as a member
+  await setDoc(doc(db(), 'workspaceMembers', `${workspaceId}_${ownerId}`), {
+    workspaceId,
+    userId: ownerId,
+    userName: ownerName,
+    userEmail: ownerEmail,
+    role: 'owner',
+    joinedAt: serverTimestamp(),
+  });
+  return workspaceId;
+}
+
+export async function getWorkspaces(userId: string): Promise<Workspace[]> {
+  const q = query(
+    collection(db(), 'workspaceMembers'),
+    where('userId', '==', userId)
+  );
+  const snap = await getDocs(q);
+  const workspaceIds = snap.docs.map((d) => d.data().workspaceId);
+  
+  if (workspaceIds.length === 0) return [];
+  
+  const workspaces: Workspace[] = [];
+  // Fetch workspaces in chunks of 10 (Firestore limit for 'in' query)
+  for (let i = 0; i < workspaceIds.length; i += 10) {
+    const chunk = workspaceIds.slice(i, i + 10);
+    const wq = query(collection(db(), 'workspaces'), where('__name__', 'in', chunk));
+    const wsnap = await getDocs(wq);
+    wsnap.docs.forEach((docSnap) => {
+      const data = docSnap.data();
+      workspaces.push({
+        id: docSnap.id,
+        name: data.name,
+        ownerId: data.ownerId,
+        createdAt: toDate(data.createdAt),
+      });
+    });
+  }
+  return workspaces;
+}
+
+export async function getWorkspaceMembers(workspaceId: string): Promise<WorkspaceMember[]> {
+  const q = query(
+    collection(db(), 'workspaceMembers'),
+    where('workspaceId', '==', workspaceId)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      workspaceId: data.workspaceId,
+      userId: data.userId,
+      userName: data.userName,
+      userEmail: data.userEmail,
+      role: data.role,
+      joinedAt: toDate(data.joinedAt),
+    };
+  });
+}
+
+export async function removeWorkspaceMember(workspaceId: string, userId: string): Promise<void> {
+  await deleteDoc(doc(db(), 'workspaceMembers', `${workspaceId}_${userId}`));
+}
+
+// ── Workspace Invitations ────────────────────────────────────
+
+export async function createInvitation(
+  workspaceId: string,
+  workspaceName: string,
+  invitedEmail: string,
+  invitedByUserId: string,
+  invitedByUserName: string,
+  role: 'admin' | 'member'
+): Promise<string> {
+  const ref = doc(collection(db(), 'workspaceInvitations'));
+  await setDoc(ref, {
+    workspaceId,
+    workspaceName,
+    invitedEmail: invitedEmail.toLowerCase().trim(),
+    invitedByUserId,
+    invitedByUserName,
+    role,
+    status: 'pending',
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+export async function getUserInvitations(email: string): Promise<WorkspaceInvitation[]> {
+  const q = query(
+    collection(db(), 'workspaceInvitations'),
+    where('invitedEmail', '==', email.toLowerCase().trim()),
+    where('status', '==', 'pending')
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      workspaceId: data.workspaceId,
+      workspaceName: data.workspaceName,
+      invitedEmail: data.invitedEmail,
+      invitedByUserId: data.invitedByUserId,
+      invitedByUserName: data.invitedByUserName,
+      role: data.role,
+      status: data.status,
+      createdAt: toDate(data.createdAt),
+    };
+  });
+}
+
+export async function updateInvitationStatus(
+  inviteId: string,
+  status: 'accepted' | 'declined',
+  userId: string,
+  userName: string,
+  userEmail: string
+): Promise<void> {
+  await updateDoc(doc(db(), 'workspaceInvitations', inviteId), { status });
+  
+  if (status === 'accepted') {
+    const snap = await getDoc(doc(db(), 'workspaceInvitations', inviteId));
+    if (snap.exists()) {
+      const inviteData = snap.data();
+      await setDoc(doc(db(), 'workspaceMembers', `${inviteData.workspaceId}_${userId}`), {
+        workspaceId: inviteData.workspaceId,
+        userId,
+        userName,
+        userEmail,
+        role: inviteData.role,
+        joinedAt: serverTimestamp(),
+      });
+    }
+  }
+}
+
+// ── Integrations ─────────────────────────────────────────────
+
+export async function saveIntegration(
+  targetId: string,
+  targetType: 'personal' | 'workspace',
+  provider: 'plane' | 'trello',
+  config: Record<string, any>
+): Promise<void> {
+  const q = query(
+    collection(db(), 'integrations'),
+    where('targetId', '==', targetId),
+    where('provider', '==', provider)
+  );
+  const snap = await getDocs(q);
+  if (!snap.empty) {
+    const docId = snap.docs[0].id;
+    await updateDoc(doc(db(), 'integrations', docId), {
+      config,
+      isActive: true,
+      lastSyncedAt: null,
+    });
+  } else {
+    const ref = doc(collection(db(), 'integrations'));
+    await setDoc(ref, {
+      targetId,
+      targetType,
+      provider,
+      config,
+      isActive: true,
+      lastSyncedAt: null,
+      createdAt: serverTimestamp(),
+    });
+  }
+}
+
+export async function getIntegrations(targetId: string): Promise<Integration[]> {
+  const q = query(
+    collection(db(), 'integrations'),
+    where('targetId', '==', targetId)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      targetId: data.targetId,
+      targetType: data.targetType,
+      provider: data.provider,
+      config: data.config,
+      isActive: data.isActive,
+      lastSyncedAt: data.lastSyncedAt ? toDate(data.lastSyncedAt) : null,
+      createdAt: toDate(data.createdAt),
+    };
+  });
+}
+
+export async function deleteIntegration(id: string): Promise<void> {
+  await deleteDoc(doc(db(), 'integrations', id));
 }
