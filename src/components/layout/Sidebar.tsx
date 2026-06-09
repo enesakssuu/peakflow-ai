@@ -26,7 +26,8 @@ import {
   Plus,
   ChevronsUpDown,
   User,
-  Brain
+  Brain,
+  Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -34,7 +35,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { userData, signOut } = useAuth();
   const { currentWorkspaceId, workspaces, switchWorkspace, activeWorkspace } = useWorkspace();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const switcherRef = useRef<HTMLDivElement>(null);
@@ -107,15 +108,15 @@ export default function Sidebar() {
       >
         {/* Logo */}
         <div className="p-6 pb-2">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-accent/10 flex items-center justify-center">
-              <Zap className="w-5 h-5 text-accent" />
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-9 h-9 rounded-xl bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
+              <Zap className="w-5 h-5 text-accent animate-pulse-soft" />
             </div>
             <div>
-              <h2 className="font-bold text-base tracking-tight">PeakFlow</h2>
+              <h2 className="font-bold text-base tracking-tight group-hover:text-accent transition-colors">PeakFlow</h2>
               <p className="text-[11px] text-muted-foreground -mt-0.5">AI Work Coach</p>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Workspace Switcher */}
@@ -221,6 +222,27 @@ export default function Sidebar() {
             );
           })}
         </nav>
+
+        {/* Upgrade to Premium CTA */}
+        <div className="px-4 py-3.5 mb-2 shrink-0">
+          <div className="bg-gradient-to-br from-accent/20 via-accent/5 to-secondary/30 border border-accent/20 rounded-xl p-3.5 text-center space-y-2">
+            <div className="flex items-center justify-center gap-1.5 text-accent">
+              <Sparkles className="w-3.5 h-3.5 text-accent animate-pulse-soft" />
+              <span className="text-[10px] font-black uppercase tracking-wider">{language === 'tr' ? 'Premium Sürüm' : 'Premium Plan'}</span>
+            </div>
+            <p className="text-[9px] text-muted-foreground leading-relaxed">
+              {language === 'tr' 
+                ? 'Sınırsız yapay zeka koçluğu ve senkronizasyonu aktif edin.' 
+                : 'Unlock unlimited AI coaching & workspace syncs.'}
+            </p>
+            <Link 
+              href="/pricing"
+              className="block w-full py-1.5 px-3 bg-accent hover:bg-accent/90 text-accent-foreground rounded-lg text-xs font-bold text-center shadow-xs transition-all cursor-pointer"
+            >
+              {language === 'tr' ? 'Yükselt' : 'Upgrade Now'}
+            </Link>
+          </div>
+        </div>
 
         {/* User section */}
         <div className="p-4 pb-8 lg:pb-4 border-t border-border">

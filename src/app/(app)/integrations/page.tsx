@@ -1,5 +1,5 @@
 // ============================================================
-// PeakFlow AI — Integrations Page
+// PeakFlow AI — Redesigned Generic Integrations Page
 // ============================================================
 
 'use client';
@@ -30,7 +30,8 @@ import {
   Lock,
   Globe,
   Settings,
-  HelpCircle
+  HelpCircle,
+  Sparkles
 } from 'lucide-react';
 import type { Integration } from '@/types';
 
@@ -44,19 +45,10 @@ export default function IntegrationsPage() {
   const [loading, setLoading] = useState(true);
 
   // Forms expanding inside cards
-  const [openFormId, setOpenFormId] = useState<'plane' | 'trello' | null>(null);
+  const [openFormId, setOpenFormId] = useState<string | null>(null);
   
-  // Plane Form fields
-  const [planeHost, setPlaneHost] = useState('https://app.plane.so');
-  const [planeApiKey, setPlaneApiKey] = useState('');
-  const [planeWorkspace, setPlaneWorkspace] = useState('');
-  const [planeProject, setPlaneProject] = useState('');
-
-  // Trello Form fields
-  const [trelloKey, setTrelloKey] = useState('');
-  const [trelloToken, setTrelloToken] = useState('');
-  const [trelloBoard, setTrelloBoard] = useState('');
-  const [trelloList, setTrelloList] = useState('');
+  // Generic form values object
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
 
   // Status variables
   const [formLoading, setFormLoading] = useState(false);
@@ -83,49 +75,45 @@ export default function IntegrationsPage() {
   useEffect(() => {
     loadIntegrations();
     setOpenFormId(null);
+    setFormValues({});
   }, [targetId, loadIntegrations]);
 
-  const handleSavePlane = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!planeApiKey || !planeWorkspace || !planeProject) return;
-    setFormLoading(true);
-    try {
-      await saveIntegration(targetId, targetType, 'plane', {
-        host: planeHost,
-        apiKey: planeApiKey,
-        workspaceSlug: planeWorkspace,
-        projectSlug: planeProject,
-      });
-      await loadIntegrations();
-      setOpenFormId(null);
-      setPlaneApiKey('');
-      showToast(isTr ? 'Plane.so başarıyla bağlandı!' : 'Plane.so connected successfully!');
-    } catch (err) {
-      console.error('Error saving Plane integration:', err);
-      showToast(isTr ? 'Bağlantı hatası!' : 'Connection error!');
-    } finally {
-      setFormLoading(false);
-    }
+  const handleInputChange = (fieldId: string, val: string) => {
+    setFormValues(prev => ({
+      ...prev,
+      [fieldId]: val
+    }));
   };
 
-  const handleSaveTrello = async (e: React.FormEvent) => {
+  const handleSaveIntegration = async (e: React.FormEvent, providerId: string, fields: any[]) => {
     e.preventDefault();
-    if (!trelloKey || !trelloToken || (!trelloBoard && !trelloList)) return;
+    if (!targetId) return;
+
+    // Validate fields are filled
+    const configData: Record<string, string> = {};
+    for (const f of fields) {
+      const value = formValues[f.id] || f.defaultValue || '';
+      if (f.required && !value) {
+        showToast(isTr ? 'Lütfen tüm alanları doldurun!' : 'Please fill all required fields!');
+        return;
+      }
+      configData[f.id] = value;
+    }
+
     setFormLoading(true);
     try {
-      await saveIntegration(targetId, targetType, 'trello', {
-        appKey: trelloKey,
-        token: trelloToken,
-        boardId: trelloBoard,
-        listId: trelloList,
-      });
+      await saveIntegration(targetId, targetType, providerId, configData);
       await loadIntegrations();
       setOpenFormId(null);
-      setTrelloToken('');
-      showToast(isTr ? 'Trello başarıyla bağlandı!' : 'Trello connected successfully!');
+      setFormValues({});
+      showToast(
+        isTr 
+          ? `${providerId.replace('_', ' ').toUpperCase()} bağlantısı başarıyla eklendi!` 
+          : `${providerId.replace('_', ' ').toUpperCase()} connection added successfully!`
+      );
     } catch (err) {
-      console.error('Error saving Trello integration:', err);
-      showToast(isTr ? 'Bağlantı hatası!' : 'Connection error!');
+      console.error('Error saving integration:', err);
+      showToast(isTr ? 'Bağlantı kaydedilemedi!' : 'Failed to save integration!');
     } finally {
       setFormLoading(false);
     }
@@ -180,13 +168,115 @@ export default function IntegrationsPage() {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  const planeInt = integrations.find((i) => i.provider === 'plane');
-  const trelloInt = integrations.find((i) => i.provider === 'trello');
-
   const formatDate = (date: Date | null) => {
     if (!date) return isTr ? 'Hiçbir zaman' : 'Never';
     return date.toLocaleString();
   };
+
+  const providersList = [
+    {
+      id: 'google_calendar',
+      name: 'Google Calendar',
+      desc: isTr 
+        ? "Akıllı planlama önerileri için toplantılarınızı ve derin çalışma bloklarınızı senkronize edin." 
+        : "Sync your meetings and deep work blocks for intelligent scheduling suggestions.",
+      icon: Calendar,
+      color: 'text-blue-500 bg-blue-500/10',
+      fields: [
+        { id: 'calendarId', label: isTr ? 'Takvim E-postası' : 'Calendar Email', placeholder: 'user@example.com', required: true }
+      ]
+    },
+    {
+      id: 'slack',
+      name: 'Slack',
+      desc: isTr 
+        ? "Odaklanma Modu sırasında bildirimleri otomatik olarak susturun ve konuşmaları özetleyin." 
+        : "Automatically silence notifications during Focus Mode and summarize missed conversations.",
+      icon: SlackIcon,
+      color: 'text-purple-500 bg-purple-500/10',
+      fields: [
+        { id: 'workspace', label: isTr ? 'Slack Çalışma Alanı Adı' : 'Slack Workspace Name', placeholder: 'my-team-workspace', required: true }
+      ]
+    },
+    {
+      id: 'notion',
+      name: 'Notion',
+      desc: isTr 
+        ? "Yapay Zeka Koçunun proje belgelerine başvurmasına izin vermek için Notion sayfalarını bağlayın." 
+        : "Connect your workspace to allow the AI Coach to reference project docs and notes.",
+      icon: BookOpen,
+      color: 'text-zinc-600 bg-zinc-500/10',
+      fields: [
+        { id: 'pageId', label: isTr ? 'Notion Sayfa ID' : 'Notion Page ID', placeholder: 'notion_page_...', required: true }
+      ]
+    },
+    {
+      id: 'trello',
+      name: 'Trello',
+      desc: isTr 
+        ? "Kartları ve panoları otomatik olarak önceliklendirmek için Trello listelerini bağlayın." 
+        : "Sync cards and boards to automatically prioritize your daily task list.",
+      icon: Layers,
+      color: 'text-blue-600 bg-blue-600/10',
+      fields: [
+        { id: 'appKey', label: 'Trello API Key', placeholder: 'API Key', required: true },
+        { id: 'token', label: 'User Token', placeholder: 'Token', type: 'password', required: true },
+        { id: 'boardId', label: 'Board ID (Optional)', placeholder: 'Board ID', required: false },
+        { id: 'listId', label: 'List ID (Optional)', placeholder: 'List ID', required: false }
+      ]
+    },
+    {
+      id: 'jira',
+      name: 'Jira',
+      desc: isTr 
+        ? "Aktif sprintleri ve hata raporlarını Odaklanma oturumu planlamanıza dahil edin." 
+        : "Pull active sprints and issues into your Focus Session planning.",
+      icon: Layers,
+      color: 'text-blue-700 bg-blue-700/10',
+      fields: [
+        { id: 'projectKey', label: isTr ? 'Proje Anahtarı (Jira Key)' : 'Project Key', placeholder: 'PROJ-KEY', required: true }
+      ]
+    },
+    {
+      id: 'clickup',
+      name: 'ClickUp',
+      desc: isTr 
+        ? "Yapay zeka odaklı haftalık analizler elde etmek için görevlerinizi ve hedeflerinizi merkezileştirin." 
+        : "Centralize your tasks and goals for AI-driven weekly insights.",
+      icon: CheckCircle,
+      color: 'text-purple-600 bg-purple-600/10',
+      fields: [
+        { id: 'listId', label: isTr ? 'Liste ID (List ID)' : 'List ID', placeholder: 'clickup_list_...', required: true }
+      ]
+    },
+    {
+      id: 'gmail',
+      name: 'Gmail',
+      desc: isTr 
+        ? "Yapay Zeka Koçunun yanıt taslakları hazırlamasına ve önemli e-postaları ortaya çıkarmasına izin verin." 
+        : "Let the AI Coach draft replies and surface important emails during review periods.",
+      icon: Mail,
+      color: 'text-red-500 bg-red-500/10',
+      fields: [
+        { id: 'email', label: isTr ? 'Gmail Adresi' : 'Gmail Address', placeholder: 'user@gmail.com', required: true }
+      ]
+    },
+    {
+      id: 'plane',
+      name: 'Plane.so',
+      desc: isTr 
+        ? "Plane.so üzerinde size atanan işleri veya takım projelerini PeakFlow'a aktarın." 
+        : "Pull issues assigned to you or your team project on Plane.so into PeakFlow for AI coaching.",
+      icon: Workflow,
+      color: 'text-indigo-500 bg-indigo-500/10',
+      fields: [
+        { id: 'host', label: 'Plane Host', placeholder: 'https://app.plane.so', required: true, defaultValue: 'https://app.plane.so' },
+        { id: 'apiKey', label: 'API Key', placeholder: 'plane_api_key_...', type: 'password', required: true },
+        { id: 'workspaceSlug', label: 'Workspace Slug', placeholder: 'workspace-slug', required: true },
+        { id: 'projectSlug', label: 'Project Slug', placeholder: 'project-slug', required: true }
+      ]
+    }
+  ];
 
   if (loading) {
     return (
@@ -235,460 +325,156 @@ export default function IntegrationsPage() {
       {/* Integrations Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
-        {/* Google Calendar (Mock Connected) */}
-        <div className="bg-card rounded-2xl p-6 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col h-full border border-border/40 hover:border-secondary/20 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-bl-full -z-10 transition-transform group-hover:scale-105"></div>
-          <div className="flex justify-between items-start mb-6">
-            <div className="w-12 h-12 rounded-xl bg-secondary/60 flex items-center justify-center text-primary">
-              <Calendar className="w-6 h-6 text-foreground" />
-            </div>
-            <div className="px-2.5 py-1 bg-accent/10 text-accent rounded-full text-xs font-bold flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent"></span>
-              {isTr ? 'Bağlandı' : 'Connected'}
-            </div>
-          </div>
-          <h3 className="font-bold text-lg text-primary mb-2">Google Calendar</h3>
-          <p className="text-sm text-muted-foreground flex-grow mb-6 leading-relaxed">
-            {isTr 
-              ? "Akıllı planlama önerileri için toplantılarınızı ve derin çalışma bloklarınızı senkronize edin."
-              : "Sync your meetings and deep work blocks for intelligent scheduling suggestions."}
-          </p>
-          <button className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-secondary hover:bg-secondary/80 text-foreground transition-colors border border-border/50 cursor-pointer">
-            {isTr ? "Ayarları Yönet" : "Manage Settings"}
-          </button>
-        </div>
+        {providersList.map((p) => {
+          const matchedInt = integrations.find(i => i.provider === p.id);
+          const Icon = p.icon;
 
-        {/* Slack (Mock Connected) */}
-        <div className="bg-card rounded-2xl p-6 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col h-full border border-border/40 hover:border-secondary/20 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-bl-full -z-10 transition-transform group-hover:scale-105"></div>
-          <div className="flex justify-between items-start mb-6">
-            <div className="w-12 h-12 rounded-xl bg-secondary/60 flex items-center justify-center text-primary">
-              <SlackIcon className="w-6 h-6 text-foreground" />
-            </div>
-            <div className="px-2.5 py-1 bg-accent/10 text-accent rounded-full text-xs font-bold flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent"></span>
-              {isTr ? 'Bağlandı' : 'Connected'}
-            </div>
-          </div>
-          <h3 className="font-bold text-lg text-primary mb-2">Slack</h3>
-          <p className="text-sm text-muted-foreground flex-grow mb-6 leading-relaxed">
-            {isTr 
-              ? "Odaklanma Modu sırasında bildirimleri otomatik olarak susturun ve kaçırılan konuşmaları özetleyin."
-              : "Automatically silence notifications during Focus Mode and summarize missed conversations."}
-          </p>
-          <button className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-secondary hover:bg-secondary/80 text-foreground transition-colors border border-border/50 cursor-pointer">
-            {isTr ? "Ayarları Yönet" : "Manage Settings"}
-          </button>
-        </div>
-
-        {/* Trello (Real Functional) */}
-        <div className={`bg-card rounded-2xl p-6 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col h-full border ${
-          trelloInt ? 'border-accent/30 bg-accent/[0.01]' : 'border-border/40'
-        } relative overflow-hidden group`}>
-          <div className="flex justify-between items-start mb-6">
-            <div className="w-12 h-12 rounded-xl bg-secondary/60 flex items-center justify-center text-primary">
-              <Layers className="w-6 h-6 text-foreground" />
-            </div>
-            {trelloInt ? (
-              <div className="px-2.5 py-1 bg-accent/10 text-accent rounded-full text-xs font-bold flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-accent"></span>
-                {isTr ? 'Bağlandı' : 'Connected'}
-              </div>
-            ) : (
-              <div className="px-2.5 py-1 bg-secondary text-muted-foreground rounded-full text-xs font-semibold">
-                {isTr ? 'Bağlı Değil' : 'Not Connected'}
-              </div>
-            )}
-          </div>
-          <h3 className="font-bold text-lg text-primary mb-2">Trello</h3>
-
-          {/* Connected View */}
-          {trelloInt && openFormId !== 'trello' && (
-            <div className="flex flex-col flex-grow">
-              <div className="rounded-xl bg-secondary/50 p-4 border border-border/40 text-xs space-y-2 mb-6 flex-grow">
-                {trelloInt.config.boardId && (
-                  <p className="text-muted-foreground flex items-center gap-1.5">
-                    <Workflow className="w-3.5 h-3.5 shrink-0" />
-                    Board ID: <span className="font-semibold text-foreground truncate max-w-[120px]">{trelloInt.config.boardId}</span>
-                  </p>
+          return (
+            <div 
+              key={p.id}
+              className={`bg-card rounded-2xl p-6 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col h-full border ${
+                matchedInt ? 'border-accent/30 bg-accent/[0.01]' : 'border-border/40'
+              } relative overflow-hidden group`}
+            >
+              <div className="flex justify-between items-start mb-6">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${p.color}`}>
+                  <Icon className="w-6 h-6" />
+                </div>
+                {matchedInt ? (
+                  <div className="px-2.5 py-1 bg-accent/10 text-accent rounded-full text-xs font-bold flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span>
+                    {isTr ? 'Bağlandı' : 'Connected'}
+                  </div>
+                ) : (
+                  <div className="px-2.5 py-1 bg-secondary text-muted-foreground rounded-full text-xs font-semibold">
+                    {isTr ? 'Bağlı Değil' : 'Not Connected'}
+                  </div>
                 )}
-                {trelloInt.config.listId && (
-                  <p className="text-muted-foreground flex items-center gap-1.5">
-                    <CheckCircle className="w-3.5 h-3.5 shrink-0" />
-                    List ID: <span className="font-semibold text-foreground truncate max-w-[120px]">{trelloInt.config.listId}</span>
-                  </p>
-                )}
-                <p className="text-muted-foreground flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 shrink-0" />
-                  {isTr ? 'Son Senkronizasyon:' : 'Last Synced:'} <span className="font-semibold text-foreground">{formatDate(trelloInt.lastSyncedAt)}</span>
-                </p>
               </div>
 
-              {syncStatus && syncStatus.id === trelloInt.id && (
-                <div className={`text-xs p-3 rounded-lg flex items-start gap-2 mb-4 ${
-                  syncStatus.success ? 'bg-success/5 text-success' : 'bg-destructive/5 text-destructive'
-                }`}>
-                  {syncStatus.success ? (
-                    <>
-                      <Check className="w-4 h-4 shrink-0 mt-0.5" />
-                      <span>{isTr ? `Trello'dan ${syncStatus.count} kart başarıyla senkronize edildi!` : `Successfully synced ${syncStatus.count} cards from Trello!`}</span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                      <span>{isTr ? `Senkronizasyon hatası: ${syncStatus.message}` : `Sync failed: ${syncStatus.message}`}</span>
-                    </>
+              <h3 className="font-bold text-lg text-primary mb-2">{p.name}</h3>
+
+              {/* Connected View */}
+              {matchedInt && openFormId !== p.id && (
+                <div className="flex flex-col flex-grow justify-between">
+                  <div className="rounded-xl bg-secondary/50 p-4 border border-border/40 text-xs space-y-2 mb-6 flex-grow">
+                    {Object.entries(matchedInt.config)
+                      .filter(([key]) => key !== 'apiKey' && key !== 'token') // Hide secrets
+                      .map(([key, val]) => (
+                        <p key={key} className="text-muted-foreground flex items-center gap-1.5 truncate">
+                          <span className="font-bold uppercase tracking-wider text-[9px] opacity-75">{key}:</span>
+                          <span className="font-semibold text-foreground truncate">{String(val)}</span>
+                        </p>
+                      ))}
+                    <p className="text-muted-foreground flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 shrink-0" />
+                      <span>{isTr ? 'Son Senkronizasyon:' : 'Last Synced:'} <span className="font-semibold text-foreground">{formatDate(matchedInt.lastSyncedAt)}</span></span>
+                    </p>
+                  </div>
+
+                  {syncStatus && syncStatus.id === matchedInt.id && (
+                    <div className={`text-xs p-3 rounded-lg flex items-start gap-2 mb-4 ${
+                      syncStatus.success ? 'bg-success/5 text-success' : 'bg-destructive/5 text-destructive'
+                    }`}>
+                      {syncStatus.success ? (
+                        <>
+                          <Check className="w-4 h-4 shrink-0 mt-0.5" />
+                          <span>{isTr ? `Başarıyla ${syncStatus.count} görev senkronize edildi!` : `Successfully synced ${syncStatus.count} tasks!`}</span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                          <span>{isTr ? `Senkronizasyon hatası: ${syncStatus.message}` : `Sync failed: ${syncStatus.message}`}</span>
+                        </>
+                      )}
+                    </div>
                   )}
+
+                  <div className="flex items-center gap-2 mt-auto">
+                    <Button
+                      onClick={() => handleSync(matchedInt.id)}
+                      className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl h-10 font-bold"
+                      disabled={syncLoadingId === matchedInt.id}
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${syncLoadingId === matchedInt.id ? 'animate-spin' : ''}`} />
+                      {syncLoadingId === matchedInt.id ? (isTr ? 'Eşleşiyor...' : 'Syncing...') : (isTr ? 'Eşle' : 'Sync')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleDelete(matchedInt.id)}
+                      className="text-muted-foreground hover:text-destructive hover:bg-destructive/5 border-border/80 hover:border-destructive/30 rounded-xl w-10 h-10 p-0 shrink-0"
+                      disabled={syncLoadingId === matchedInt.id}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               )}
 
-              <div className="flex items-center gap-2 mt-auto">
-                <Button
-                  onClick={() => handleSync(trelloInt.id)}
-                  className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl h-10 font-bold"
-                  disabled={syncLoadingId === trelloInt.id}
-                >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${syncLoadingId === trelloInt.id ? 'animate-spin' : ''}`} />
-                  {syncLoadingId === trelloInt.id ? (isTr ? 'Eşleşiyor...' : 'Syncing...') : (isTr ? 'Şimdi Eşle' : 'Sync Now')}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => handleDelete(trelloInt.id)}
-                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/5 border-border/80 hover:border-destructive/30 rounded-xl w-10 h-10 p-0"
-                  disabled={syncLoadingId === trelloInt.id}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Not Connected View */}
-          {!trelloInt && openFormId !== 'trello' && (
-            <div className="flex flex-col flex-grow">
-              <p className="text-sm text-muted-foreground flex-grow mb-6 leading-relaxed">
-                {isTr 
-                  ? "Kartları ve panoları otomatik olarak önceliklendirmek için Trello listelerini veya panolarını bağlayın."
-                  : "Sync cards and boards to automatically prioritize your daily task list."}
-              </p>
-              <button 
-                onClick={() => setOpenFormId('trello')}
-                className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground transition-colors cursor-pointer mt-auto"
-              >
-                {isTr ? "Trello'yu Bağla" : "Connect Trello"}
-              </button>
-            </div>
-          )}
-
-          {/* Connection Form Inline */}
-          {openFormId === 'trello' && (
-            <form onSubmit={handleSaveTrello} className="space-y-3.5 pt-2 border-t border-border/20 flex-grow flex flex-col justify-between">
-              <div className="space-y-2.5">
-                <div className="space-y-1">
-                  <Label htmlFor="tkey" className="text-xs font-bold text-muted-foreground">Trello API Key</Label>
-                  <Input
-                    id="tkey"
-                    value={trelloKey}
-                    onChange={(e) => setTrelloKey(e.target.value)}
-                    placeholder="Developer API Key"
-                    className="h-9 text-xs"
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="ttoken" className="text-xs font-bold text-muted-foreground">User Token</Label>
-                  <Input
-                    id="ttoken"
-                    type="password"
-                    value={trelloToken}
-                    onChange={(e) => setTrelloToken(e.target.value)}
-                    placeholder="User token key"
-                    className="h-9 text-xs"
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <Label htmlFor="tboard" className="text-xs font-bold text-muted-foreground">Board ID</Label>
-                    <Input
-                      id="tboard"
-                      value={trelloBoard}
-                      onChange={(e) => setTrelloBoard(e.target.value)}
-                      placeholder="Optional"
-                      className="h-9 text-xs"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="tlist" className="text-xs font-bold text-muted-foreground">List ID</Label>
-                    <Input
-                      id="tlist"
-                      value={trelloList}
-                      onChange={(e) => setTrelloList(e.target.value)}
-                      placeholder="Optional"
-                      className="h-9 text-xs"
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex gap-2 pt-4 mt-auto">
-                <Button type="submit" variant="accent" className="flex-1 text-xs h-9 font-bold" disabled={formLoading}>
-                  {formLoading ? (isTr ? 'Bağlanıyor...' : 'Connecting...') : (isTr ? 'Kaydet' : 'Connect')}
-                </Button>
-                <Button type="button" variant="ghost" className="text-xs h-9 border border-border/40 hover:bg-secondary" onClick={() => setOpenFormId(null)} disabled={formLoading}>
-                  {isTr ? 'İptal' : 'Cancel'}
-                </Button>
-              </div>
-            </form>
-          )}
-
-        </div>
-
-        {/* Notion (Mock Not Connected) */}
-        <div className="bg-card rounded-2xl p-6 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col h-full border border-border/40 hover:border-secondary/20 relative overflow-hidden group">
-          <div className="flex justify-between items-start mb-6">
-            <div className="w-12 h-12 rounded-xl bg-secondary/60 flex items-center justify-center text-on-surface-variant">
-              <BookOpen className="w-6 h-6 text-foreground" />
-            </div>
-            <div className="px-2.5 py-1 bg-secondary text-muted-foreground rounded-full text-xs font-semibold">
-              {isTr ? 'Bağlı Değil' : 'Not Connected'}
-            </div>
-          </div>
-          <h3 className="font-bold text-lg text-primary mb-2">Notion</h3>
-          <p className="text-sm text-muted-foreground flex-grow mb-6 leading-relaxed">
-            {isTr 
-              ? "Yapay Zeka Koçunun proje belgelerine ve notlara başvurmasına izin vermek için çalışma alanınızı bağlayın."
-              : "Connect your workspace to allow the AI Coach to reference project docs and notes."}
-          </p>
-          <button className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground transition-colors cursor-pointer mt-auto">
-            {isTr ? "Notion'ı Bağla" : "Connect Notion"}
-          </button>
-        </div>
-
-        {/* Jira (Mock Not Connected) */}
-        <div className="bg-card rounded-2xl p-6 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col h-full border border-border/40 hover:border-secondary/20 relative overflow-hidden group">
-          <div className="flex justify-between items-start mb-6">
-            <div className="w-12 h-12 rounded-xl bg-secondary/60 flex items-center justify-center text-on-surface-variant">
-              <Layers className="w-6 h-6 text-foreground" />
-            </div>
-            <div className="px-2.5 py-1 bg-secondary text-muted-foreground rounded-full text-xs font-semibold">
-              {isTr ? 'Bağlı Değil' : 'Not Connected'}
-            </div>
-          </div>
-          <h3 className="font-bold text-lg text-primary mb-2">Jira</h3>
-          <p className="text-sm text-muted-foreground flex-grow mb-6 leading-relaxed">
-            {isTr 
-              ? "Aktif sprintleri ve hata raporlarını Odaklanma oturumu planlamanıza dahil edin."
-              : "Pull active sprints and issues into your Focus Session planning."}
-          </p>
-          <button className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground transition-colors cursor-pointer mt-auto">
-            {isTr ? "Jira'yı Bağla" : "Connect Jira"}
-          </button>
-        </div>
-
-        {/* ClickUp (Mock Not Connected) */}
-        <div className="bg-card rounded-2xl p-6 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col h-full border border-border/40 hover:border-secondary/20 relative overflow-hidden group">
-          <div className="flex justify-between items-start mb-6">
-            <div className="w-12 h-12 rounded-xl bg-secondary/60 flex items-center justify-center text-on-surface-variant">
-              <CheckCircle className="w-6 h-6 text-foreground" />
-            </div>
-            <div className="px-2.5 py-1 bg-secondary text-muted-foreground rounded-full text-xs font-semibold">
-              {isTr ? 'Bağlı Değil' : 'Not Connected'}
-            </div>
-          </div>
-          <h3 className="font-bold text-lg text-primary mb-2">ClickUp</h3>
-          <p className="text-sm text-muted-foreground flex-grow mb-6 leading-relaxed">
-            {isTr 
-              ? "Yapay zeka odaklı haftalık analizler elde etmek için görevlerinizi ve hedeflerinizi merkezileştirin."
-              : "Centralize your tasks and goals for AI-driven weekly insights."}
-          </p>
-          <button className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground transition-colors cursor-pointer mt-auto">
-            {isTr ? "ClickUp'ı Bağla" : "Connect ClickUp"}
-          </button>
-        </div>
-
-        {/* Gmail (Mock Not Connected) */}
-        <div className="bg-card rounded-2xl p-6 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col h-full border border-border/40 hover:border-secondary/20 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-bl-full -z-10 transition-transform group-hover:scale-105"></div>
-          <div className="flex justify-between items-start mb-6">
-            <div className="w-12 h-12 rounded-xl bg-secondary/60 flex items-center justify-center text-primary">
-              <Mail className="w-6 h-6 text-foreground" />
-            </div>
-            <div className="px-2.5 py-1 bg-secondary text-muted-foreground rounded-full text-xs font-semibold">
-              {isTr ? 'Bağlı Değil' : 'Not Connected'}
-            </div>
-          </div>
-          <h3 className="font-bold text-lg text-primary mb-2">Gmail</h3>
-          <p className="text-sm text-muted-foreground flex-grow mb-6 leading-relaxed">
-            {isTr 
-              ? "Yapay Zeka Koçunun yanıt taslakları hazırlamasına ve inceleme süreleri boyunca önemli e-postaları ortaya çıkarmasına izin verin."
-              : "Let the AI Coach draft replies and surface important emails during review periods."}
-          </p>
-          <button className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground transition-colors cursor-pointer mt-auto">
-            {isTr ? "Gmail'i Bağla" : "Connect Gmail"}
-          </button>
-        </div>
-
-        {/* Plane.so (Real Functional) */}
-        <div className={`bg-card rounded-2xl p-6 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col h-full border ${
-          planeInt ? 'border-accent/30 bg-accent/[0.01]' : 'border-border/40'
-        } relative overflow-hidden group`}>
-          <div className="flex justify-between items-start mb-6">
-            <div className="w-12 h-12 rounded-xl bg-secondary/60 flex items-center justify-center text-primary">
-              <Workflow className="w-6 h-6 text-foreground" />
-            </div>
-            {planeInt ? (
-              <div className="px-2.5 py-1 bg-accent/10 text-accent rounded-full text-xs font-bold flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-accent"></span>
-                {isTr ? 'Bağlandı' : 'Connected'}
-              </div>
-            ) : (
-              <div className="px-2.5 py-1 bg-secondary text-muted-foreground rounded-full text-xs font-semibold">
-                {isTr ? 'Bağlı Değil' : 'Not Connected'}
-              </div>
-            )}
-          </div>
-          <h3 className="font-bold text-lg text-primary mb-2">Plane.so</h3>
-
-          {/* Connected View */}
-          {planeInt && openFormId !== 'plane' && (
-            <div className="flex flex-col flex-grow">
-              <div className="rounded-xl bg-secondary/50 p-4 border border-border/40 text-xs space-y-2 mb-6 flex-grow">
-                <p className="text-muted-foreground flex items-center gap-1.5">
-                  <Globe className="w-3.5 h-3.5 shrink-0" />
-                  Host: <span className="font-semibold text-foreground truncate max-w-[120px]">{planeInt.config.host}</span>
-                </p>
-                <p className="text-muted-foreground flex items-center gap-1.5">
-                  <Workflow className="w-3.5 h-3.5 shrink-0" />
-                  Workspace: <span className="font-semibold text-foreground truncate max-w-[120px]">{planeInt.config.workspaceSlug}</span>
-                </p>
-                <p className="text-muted-foreground flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 shrink-0" />
-                  {isTr ? 'Son Senkronizasyon:' : 'Last Synced:'} <span className="font-semibold text-foreground">{formatDate(planeInt.lastSyncedAt)}</span>
-                </p>
-              </div>
-
-              {syncStatus && syncStatus.id === planeInt.id && (
-                <div className={`text-xs p-3 rounded-lg flex items-start gap-2 mb-4 ${
-                  syncStatus.success ? 'bg-success/5 text-success' : 'bg-destructive/5 text-destructive'
-                }`}>
-                  {syncStatus.success ? (
-                    <>
-                      <Check className="w-4 h-4 shrink-0 mt-0.5" />
-                      <span>{isTr ? `Plane.so'dan ${syncStatus.count} görev başarıyla senkronize edildi!` : `Successfully synced ${syncStatus.count} tasks from Plane.so!`}</span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                      <span>{isTr ? `Senkronizasyon hatası: ${syncStatus.message}` : `Sync failed: ${syncStatus.message}`}</span>
-                    </>
-                  )}
+              {/* Not Connected View */}
+              {!matchedInt && openFormId !== p.id && (
+                <div className="flex flex-col flex-grow justify-between">
+                  <p className="text-sm text-muted-foreground mb-6 leading-relaxed flex-grow">
+                    {p.desc}
+                  </p>
+                  <button 
+                    onClick={() => {
+                      setOpenFormId(p.id);
+                      setFormValues({});
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground transition-colors cursor-pointer mt-auto"
+                  >
+                    {isTr ? `${p.name} Bağla` : `Connect ${p.name}`}
+                  </button>
                 </div>
               )}
 
-              <div className="flex items-center gap-2 mt-auto">
-                <Button
-                  onClick={() => handleSync(planeInt.id)}
-                  className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl h-10 font-bold"
-                  disabled={syncLoadingId === planeInt.id}
+              {/* Connection Form Inline */}
+              {openFormId === p.id && (
+                <form 
+                  onSubmit={(e) => handleSaveIntegration(e, p.id, p.fields)} 
+                  className="space-y-3 pt-2 border-t border-border/20 flex-grow flex flex-col justify-between"
                 >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${syncLoadingId === planeInt.id ? 'animate-spin' : ''}`} />
-                  {syncLoadingId === planeInt.id ? (isTr ? 'Eşleşiyor...' : 'Syncing...') : (isTr ? 'Şimdi Eşle' : 'Sync Now')}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => handleDelete(planeInt.id)}
-                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/5 border-border/80 hover:border-destructive/30 rounded-xl w-10 h-10 p-0"
-                  disabled={syncLoadingId === planeInt.id}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Not Connected View */}
-          {!planeInt && openFormId !== 'plane' && (
-            <div className="flex flex-col flex-grow">
-              <p className="text-sm text-muted-foreground flex-grow mb-6 leading-relaxed">
-                {isTr 
-                  ? "Plane.so üzerinde size atanan işleri veya takım projelerini koçluk için PeakFlow'a aktarın."
-                  : "Pull issues assigned to you or your team project on Plane.so into PeakFlow for AI coaching."}
-              </p>
-              <button 
-                onClick={() => setOpenFormId('plane')}
-                className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground transition-colors cursor-pointer mt-auto"
-              >
-                {isTr ? "Plane'i Bağla" : "Connect Plane.so"}
-              </button>
-            </div>
-          )}
-
-          {/* Connection Form Inline */}
-          {openFormId === 'plane' && (
-            <form onSubmit={handleSavePlane} className="space-y-3 pt-2 border-t border-border/20 flex-grow flex flex-col justify-between">
-              <div className="space-y-2">
-                <div className="space-y-1">
-                  <Label htmlFor="phost" className="text-xs font-bold text-muted-foreground">Plane Host</Label>
-                  <Input
-                    id="phost"
-                    value={planeHost}
-                    onChange={(e) => setPlaneHost(e.target.value)}
-                    placeholder="https://app.plane.so"
-                    className="h-8.5 text-xs"
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="pkey" className="text-xs font-bold text-muted-foreground">API Key</Label>
-                  <Input
-                    id="pkey"
-                    type="password"
-                    value={planeApiKey}
-                    onChange={(e) => setPlaneApiKey(e.target.value)}
-                    placeholder="plane_api_key_..."
-                    className="h-8.5 text-xs"
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <Label htmlFor="pwspace" className="text-xs font-bold text-muted-foreground">Workspace Slug</Label>
-                    <Input
-                      id="pwspace"
-                      value={planeWorkspace}
-                      onChange={(e) => setPlaneWorkspace(e.target.value)}
-                      placeholder="workspace-slug"
-                      className="h-8.5 text-xs"
-                      required
-                    />
+                  <div className="space-y-2.5">
+                    {p.fields.map((f) => (
+                      <div key={f.id} className="space-y-1">
+                        <Label htmlFor={`${p.id}-${f.id}`} className="text-xs font-bold text-muted-foreground flex items-center justify-between">
+                          <span>{f.label}</span>
+                          {f.required && <span className="text-red-500 font-normal">*</span>}
+                        </Label>
+                        <Input
+                          id={`${p.id}-${f.id}`}
+                          type={f.type || 'text'}
+                          value={formValues[f.id] || ''}
+                          onChange={(e) => handleInputChange(f.id, e.target.value)}
+                          placeholder={f.placeholder}
+                          className="h-9 text-xs"
+                          required={f.required}
+                        />
+                      </div>
+                    ))}
                   </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="pproject" className="text-xs font-bold text-muted-foreground">Project Slug</Label>
-                    <Input
-                      id="pproject"
-                      value={planeProject}
-                      onChange={(e) => setPlaneProject(e.target.value)}
-                      placeholder="project-slug"
-                      className="h-8.5 text-xs"
-                      required
-                    />
+                  
+                  <div className="flex gap-2 pt-4 mt-auto">
+                    <Button type="submit" variant="accent" className="flex-1 text-xs h-9 font-bold" disabled={formLoading}>
+                      {formLoading ? (isTr ? 'Bağlanıyor...' : 'Connecting...') : (isTr ? 'Kaydet' : 'Connect')}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      className="text-xs h-9 border border-border/40 hover:bg-secondary" 
+                      onClick={() => setOpenFormId(null)} 
+                      disabled={formLoading}
+                    >
+                      {isTr ? 'İptal' : 'Cancel'}
+                    </Button>
                   </div>
-                </div>
-              </div>
-              
-              <div className="flex gap-2 pt-3 mt-auto">
-                <Button type="submit" variant="accent" className="flex-1 text-xs h-9 font-bold" disabled={formLoading}>
-                  {formLoading ? (isTr ? 'Bağlanıyor...' : 'Connecting...') : (isTr ? 'Kaydet' : 'Connect')}
-                </Button>
-                <Button type="button" variant="ghost" className="text-xs h-9 border border-border/40 hover:bg-secondary" onClick={() => setOpenFormId(null)} disabled={formLoading}>
-                  {isTr ? 'İptal' : 'Cancel'}
-                </Button>
-              </div>
-            </form>
-          )}
+                </form>
+              )}
 
-        </div>
+            </div>
+          );
+        })}
 
         {/* Missing a tool? / Request New */}
         <div className="bg-card/40 border-2 border-dashed border-border/60 rounded-2xl p-6 flex flex-col items-center justify-center text-center hover:bg-card hover:border-accent/40 transition-colors cursor-pointer min-h-[260px] group">

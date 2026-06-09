@@ -49,6 +49,35 @@ export async function POST(req: Request) {
       externalTasks = await fetchPlaneIssues(config);
     } else if (provider === 'trello') {
       externalTasks = await fetchTrelloCards(config);
+    } else if (['google_calendar', 'slack', 'notion', 'jira', 'clickup', 'gmail'].includes(provider)) {
+      if (provider === 'google_calendar') {
+        externalTasks = [
+          { sourceId: 'cal-1', title: 'Deep Work: Core API Refactoring', status: 'todo', estimatedDuration: 60, impactScore: 5 },
+          { sourceId: 'cal-2', title: 'Product alignment call sync', status: 'todo', estimatedDuration: 30, impactScore: 2 }
+        ];
+      } else if (provider === 'slack') {
+        externalTasks = [
+          { sourceId: 'slack-1', title: 'Review bug reported in #prod-alerts', status: 'todo', estimatedDuration: 15, impactScore: 4 }
+        ];
+      } else if (provider === 'notion') {
+        externalTasks = [
+          { sourceId: 'notion-1', title: 'Draft product specification document', status: 'todo', estimatedDuration: 45, impactScore: 4 },
+          { sourceId: 'notion-2', title: 'Brainstorm marketing launch notes', status: 'todo', estimatedDuration: 30, impactScore: 3 }
+        ];
+      } else if (provider === 'jira') {
+        externalTasks = [
+          { sourceId: 'jira-1', title: 'PF-289: Resolve database indexing latency', status: 'todo', estimatedDuration: 90, impactScore: 5 },
+          { sourceId: 'jira-2', title: 'PF-144: Add security headers check', status: 'todo', estimatedDuration: 20, impactScore: 3 }
+        ];
+      } else if (provider === 'clickup') {
+        externalTasks = [
+          { sourceId: 'click-1', title: 'Design landing page pricing block', status: 'todo', estimatedDuration: 40, impactScore: 4 }
+        ];
+      } else if (provider === 'gmail') {
+        externalTasks = [
+          { sourceId: 'mail-1', title: 'Respond to security review questions', status: 'todo', estimatedDuration: 30, impactScore: 4 }
+        ];
+      }
     } else {
       return NextResponse.json({ error: 'Unsupported provider' }, { status: 400 });
     }

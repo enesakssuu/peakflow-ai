@@ -564,7 +564,7 @@ export async function updateInvitationStatus(
 export async function saveIntegration(
   targetId: string,
   targetType: 'personal' | 'workspace',
-  provider: 'plane' | 'trello',
+  provider: string,
   config: Record<string, any>
 ): Promise<void> {
   const q = query(

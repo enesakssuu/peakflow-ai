@@ -124,7 +124,7 @@ export interface Integration {
   id: string;
   targetId: string; // userId or workspaceId
   targetType: 'personal' | 'workspace';
-  provider: 'plane' | 'trello';
+  provider: string;
   config: {
     // Plane config
     apiKey?: string;
@@ -136,6 +136,8 @@ export interface Integration {
     token?: string;
     boardId?: string;
     listId?: string;
+    // Generic fields for other integrations
+    [key: string]: any;
   };
   isActive: boolean;
   lastSyncedAt: Date | null;
