@@ -42,7 +42,13 @@ export default function TasksPage() {
     loadTasks();
   }, [loadTasks]);
 
-  const handleSave = async (data: { title: string; estimatedDuration: number; impactScore: number }) => {
+  const handleSave = async (data: { 
+    title: string; 
+    estimatedDuration: number; 
+    impactScore: number;
+    description?: string;
+    imageUrl?: string;
+  }) => {
     if (!firebaseUser) return;
 
     if (editingTask) {

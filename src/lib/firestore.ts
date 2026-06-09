@@ -70,6 +70,8 @@ export async function createTask(
     title: string; 
     estimatedDuration: number; 
     impactScore: number;
+    description?: string;
+    imageUrl?: string;
     workspaceId?: string | null;
     assignedToUserId?: string | null;
     source?: 'local' | 'plane' | 'trello';
@@ -80,10 +82,13 @@ export async function createTask(
   await setDoc(ref, {
     userId,
     title: data.title,
+    description: data.description || '',
+    imageUrl: data.imageUrl || '',
     estimatedDuration: data.estimatedDuration,
     impactScore: data.impactScore,
     status: 'todo' as TaskStatus,
     createdAt: serverTimestamp(),
+    completedAt: null,
     workspaceId: data.workspaceId || null,
     assignedToUserId: data.assignedToUserId || null,
     source: data.source || 'local',
@@ -112,10 +117,13 @@ export async function getTasks(userId: string, workspaceId: string | null = null
       id: d.id,
       userId: data.userId,
       title: data.title,
+      description: data.description || '',
+      imageUrl: data.imageUrl || '',
       estimatedDuration: data.estimatedDuration,
       impactScore: data.impactScore,
       status: data.status as TaskStatus,
       createdAt: toDate(data.createdAt),
+      completedAt: data.completedAt ? toDate(data.completedAt) : null,
       workspaceId: data.workspaceId || null,
       source: data.source || 'local',
       sourceId: data.sourceId || null,
@@ -140,10 +148,13 @@ export async function getTask(taskId: string): Promise<Task | null> {
     id: snap.id,
     userId: data.userId,
     title: data.title,
+    description: data.description || '',
+    imageUrl: data.imageUrl || '',
     estimatedDuration: data.estimatedDuration,
     impactScore: data.impactScore,
     status: data.status as TaskStatus,
     createdAt: toDate(data.createdAt),
+    completedAt: data.completedAt ? toDate(data.completedAt) : null,
     workspaceId: data.workspaceId || null,
     source: data.source || 'local',
     sourceId: data.sourceId || null,
@@ -154,6 +165,11 @@ export async function getTask(taskId: string): Promise<Task | null> {
 export async function updateTask(taskId: string, data: Partial<Task>): Promise<void> {
   const { id, ...rest } = data as Record<string, unknown>;
   void id;
+  if (data.status === 'completed') {
+    rest.completedAt = serverTimestamp();
+  } else if (data.status) {
+    rest.completedAt = null;
+  }
   await updateDoc(doc(db(), 'tasks', taskId), rest);
 }
 
@@ -178,6 +194,80 @@ export async function createFocusSession(
     workspaceId: data.workspaceId || null,
   });
   return ref.id;
+}
+
+export async function getActiveFocusSession(userId: string, taskId: string): Promise<any | null> {
+  const q = query(
+    collection(db(), 'focusSessions'),
+    where('userId', '==', userId),
+    where('taskId', '==', taskId),
+    where('completed', '==', false)
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  
+  const d = snap.docs[0];
+  const data = d.data();
+  return {
+    id: d.id,
+    userId: data.userId,
+    taskId: data.taskId,
+    taskTitle: data.taskTitle,
+    startTime: toDate(data.startTime),
+    endTime: data.endTime ? toDate(data.endTime) : null,
+    duration: data.duration,
+    completed: data.completed,
+    workspaceId: data.workspaceId || null,
+    status: data.status || 'running',
+    accumulatedTime: data.accumulatedTime || 0,
+    lastResumeTime: data.lastResumeTime ? toDate(data.lastResumeTime) : toDate(data.startTime),
+  };
+}
+
+export async function startFocusSession(data: {
+  userId: string;
+  taskId: string;
+  taskTitle: string;
+  workspaceId: string | null;
+}): Promise<string> {
+  const ref = doc(collection(db(), 'focusSessions'));
+  await setDoc(ref, {
+    userId: data.userId,
+    taskId: data.taskId,
+    taskTitle: data.taskTitle,
+    startTime: serverTimestamp(),
+    endTime: null,
+    duration: 0,
+    completed: false,
+    status: 'running',
+    accumulatedTime: 0,
+    lastResumeTime: serverTimestamp(),
+    workspaceId: data.workspaceId || null,
+  });
+  return ref.id;
+}
+
+export async function pauseFocusSession(sessionId: string, accumulatedTime: number): Promise<void> {
+  await updateDoc(doc(db(), 'focusSessions', sessionId), {
+    status: 'paused',
+    accumulatedTime,
+  });
+}
+
+export async function resumeFocusSession(sessionId: string): Promise<void> {
+  await updateDoc(doc(db(), 'focusSessions', sessionId), {
+    status: 'running',
+    lastResumeTime: serverTimestamp(),
+  });
+}
+
+export async function completeFocusSession(sessionId: string, elapsedSeconds: number): Promise<void> {
+  await updateDoc(doc(db(), 'focusSessions', sessionId), {
+    endTime: serverTimestamp(),
+    completed: true,
+    duration: Math.round(elapsedSeconds / 60) || 1,
+    status: 'completed',
+  });
 }
 
 export async function getFocusSessions(userId: string, workspaceId: string | null = null): Promise<FocusSession[]> {
@@ -237,11 +327,10 @@ export async function createDailyReview(
 export async function getDailyReviews(userId: string): Promise<DailyReview[]> {
   const q = query(
     collection(db(), 'dailyReviews'),
-    where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
+    where('userId', '==', userId)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => {
+  const reviews = snap.docs.map((d) => {
     const data = d.data();
     return {
       id: d.id,
@@ -252,6 +341,7 @@ export async function getDailyReviews(userId: string): Promise<DailyReview[]> {
       createdAt: toDate(data.createdAt),
     };
   });
+  return reviews.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
 // ── Workspaces ───────────────────────────────────────────────

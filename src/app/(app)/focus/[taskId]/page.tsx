@@ -7,7 +7,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { getTask, updateTask, createFocusSession } from '@/lib/firestore';
+import { 
+  getTask, 
+  updateTask, 
+  getActiveFocusSession, 
+  startFocusSession, 
+  pauseFocusSession, 
+  resumeFocusSession, 
+  completeFocusSession 
+} from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { Pause, Play, CheckCircle2, X, Zap } from 'lucide-react';
 import type { Task } from '@/types';
@@ -23,30 +31,71 @@ export default function FocusPage() {
   const [elapsed, setElapsed] = useState(0); // in seconds
   const [isRunning, setIsRunning] = useState(true);
   const [completed, setCompleted] = useState(false);
-  const startTimeRef = useRef<Date>(new Date());
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const accumulatedTimeRef = useRef<number>(0);
   const lastResumeTimeRef = useRef<Date>(new Date());
 
-  // Load task
+  // Load task and active focus session
   useEffect(() => {
-    const loadTask = async () => {
+    const loadData = async () => {
       if (!firebaseUser) return;
-      const found = await getTask(taskId);
-      if (found) {
-        setTask(found);
+      
+      try {
+        const foundTask = await getTask(taskId);
+        if (!foundTask) {
+          setLoading(false);
+          return;
+        }
+        setTask(foundTask);
+
+        // Check if there is an active focus session in Firestore
+        const activeSession = await getActiveFocusSession(firebaseUser.uid, taskId);
+        
+        if (activeSession) {
+          setActiveSessionId(activeSession.id);
+          const accumulated = activeSession.accumulatedTime || 0;
+          accumulatedTimeRef.current = accumulated;
+
+          if (activeSession.status === 'running') {
+            setIsRunning(true);
+            const lastResume = activeSession.lastResumeTime || activeSession.startTime;
+            lastResumeTimeRef.current = lastResume;
+            
+            const diffSeconds = Math.floor((new Date().getTime() - lastResume.getTime()) / 1000);
+            setElapsed(accumulated + diffSeconds);
+          } else {
+            setIsRunning(false);
+            setElapsed(accumulated);
+          }
+        } else {
+          // No active session exists: create one in Firestore immediately
+          const newSessionId = await startFocusSession({
+            userId: firebaseUser.uid,
+            taskId: taskId,
+            taskTitle: foundTask.title,
+            workspaceId: foundTask.workspaceId || null,
+          });
+          setActiveSessionId(newSessionId);
+          setIsRunning(true);
+          lastResumeTimeRef.current = new Date();
+          accumulatedTimeRef.current = 0;
+          setElapsed(0);
+        }
+      } catch (err) {
+        console.error('Error loading focus page data:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
-    loadTask();
+    
+    loadData();
   }, [firebaseUser, taskId]);
 
-  // Timer (Timestamp-based)
+  // Timer interval loop (Ticking from lastResumeTime to prevent tab freeze issue)
   useEffect(() => {
-    if (isRunning && !completed) {
-      // Always reset resume point on state run to keep it accurate
-      lastResumeTimeRef.current = new Date();
-
+    if (isRunning && !completed && activeSessionId) {
       const tick = () => {
         const diffSeconds = Math.floor((new Date().getTime() - lastResumeTimeRef.current.getTime()) / 1000);
         setElapsed(accumulatedTimeRef.current + diffSeconds);
@@ -58,7 +107,7 @@ export default function FocusPage() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isRunning, completed]);
+  }, [isRunning, completed, activeSessionId]);
 
   // Listen to visibility and focus events to catch up instantly
   useEffect(() => {
@@ -92,7 +141,7 @@ export default function FocusPage() {
   };
 
   const handleComplete = useCallback(async () => {
-    if (!firebaseUser || !task || completed) return;
+    if (!firebaseUser || !task || completed || !activeSessionId) return;
 
     let finalElapsed = elapsed;
     if (isRunning) {
@@ -104,61 +153,46 @@ export default function FocusPage() {
     setIsRunning(false);
     setElapsed(finalElapsed);
 
-    const endTime = new Date();
-    const durationMinutes = Math.round(finalElapsed / 60);
+    try {
+      // Mark focus session as completed in Firestore
+      await completeFocusSession(activeSessionId, finalElapsed);
 
-    // Save focus session
-    await createFocusSession({
-      userId: firebaseUser.uid,
-      taskId: task.id,
-      taskTitle: task.title,
-      startTime: startTimeRef.current,
-      endTime,
-      duration: durationMinutes || 1,
-      completed: true,
-      workspaceId: task.workspaceId || null,
-    });
-
-    // Mark task as completed
-    await updateTask(task.id, { status: 'completed' });
-  }, [firebaseUser, task, elapsed, isRunning, completed]);
-
-  const handleExit = async () => {
-    let finalElapsed = elapsed;
-    if (isRunning && !completed) {
-      const diffSeconds = Math.floor((new Date().getTime() - lastResumeTimeRef.current.getTime()) / 1000);
-      finalElapsed = accumulatedTimeRef.current + diffSeconds;
+      // Mark task as completed
+      await updateTask(task.id, { status: 'completed' });
+    } catch (err) {
+      console.error('Error completing focus session:', err);
     }
+  }, [firebaseUser, task, elapsed, isRunning, completed, activeSessionId]);
 
-    if (finalElapsed > 60 && firebaseUser && task && !completed) {
-      // Save partial session
-      const endTime = new Date();
-      const durationMinutes = Math.round(finalElapsed / 60);
-      await createFocusSession({
-        userId: firebaseUser.uid,
-        taskId: task.id,
-        taskTitle: task.title,
-        startTime: startTimeRef.current,
-        endTime,
-        duration: durationMinutes || 1,
-        completed: false,
-        workspaceId: task.workspaceId || null,
-      });
-    }
+  const handleExit = () => {
+    // Just exit! Timer remains active in Firestore and continues running in the background.
     router.push('/dashboard');
   };
 
-  const toggleTimer = () => {
-    if (isRunning) {
-      // Pausing: lock in current elapsed time
-      const diffSeconds = Math.floor((new Date().getTime() - lastResumeTimeRef.current.getTime()) / 1000);
-      accumulatedTimeRef.current += diffSeconds;
-      setElapsed(accumulatedTimeRef.current);
-      setIsRunning(false);
-    } else {
-      // Resuming: start new timestamp interval
-      lastResumeTimeRef.current = new Date();
-      setIsRunning(true);
+  const toggleTimer = async () => {
+    if (!activeSessionId) return;
+
+    try {
+      if (isRunning) {
+        // Pausing: lock in current elapsed time
+        const diffSeconds = Math.floor((new Date().getTime() - lastResumeTimeRef.current.getTime()) / 1000);
+        const newAccumulated = accumulatedTimeRef.current + diffSeconds;
+        accumulatedTimeRef.current = newAccumulated;
+        setElapsed(newAccumulated);
+        setIsRunning(false);
+
+        // Save paused state in Firestore
+        await pauseFocusSession(activeSessionId, newAccumulated);
+      } else {
+        // Resuming: start new timestamp interval
+        lastResumeTimeRef.current = new Date();
+        setIsRunning(true);
+
+        // Save resume state in Firestore
+        await resumeFocusSession(activeSessionId);
+      }
+    } catch (err) {
+      console.error('Error toggling focus timer:', err);
     }
   };
 
@@ -194,6 +228,7 @@ export default function FocusPage() {
       <button
         onClick={handleExit}
         className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer"
+        title="Exit focus (keeps running in background)"
       >
         <X className="w-5 h-5 text-white/60" />
       </button>
@@ -234,6 +269,11 @@ export default function FocusPage() {
         <h1 className="text-2xl lg:text-3xl font-bold text-white max-w-lg">
           {task.title}
         </h1>
+        {task.description && (
+          <p className="text-white/60 text-xs mt-2.5 max-w-md mx-auto line-clamp-2">
+            {task.description}
+          </p>
+        )}
       </div>
 
       {/* Timer ring */}
@@ -311,8 +351,8 @@ export default function FocusPage() {
       </div>
 
       {/* Elapsed time */}
-      <p className="text-white/30 text-sm mt-8 animate-fade-in delay-300">
-        Elapsed: {formatTime(elapsed)}
+      <p className="text-white/30 text-sm mt-8 animate-fade-in delay-300 animate-pulse-soft">
+        Active Session Running... Elapsed: {formatTime(elapsed)}
       </p>
     </div>
   );

@@ -2,7 +2,7 @@
 // PeakFlow AI — Core Type Definitions
 // ============================================================
 
-export type TaskStatus = 'todo' | 'in_progress' | 'completed';
+export type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'completed';
 
 export interface User {
   id: string;
@@ -18,10 +18,13 @@ export interface Task {
   id: string;
   userId: string;
   title: string;
+  description?: string;
+  imageUrl?: string;
   estimatedDuration: number; // in minutes
   impactScore: number;       // 1-5
   status: TaskStatus;
   createdAt: Date;
+  completedAt?: Date | null;
   workspaceId?: string | null;
   source?: 'local' | 'plane' | 'trello';
   sourceId?: string | null;
