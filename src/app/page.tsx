@@ -98,6 +98,14 @@ const dictionary = {
     ctaTitle: "Ready to reach Peak Flow?",
     ctaDesc: "Join thousands of developers, operators, and creators who let AI guide their focus daily.",
     exploreBtn: "Explore Features",
+    features: "Features",
+    pricing: "Pricing",
+    pricingTitle: "Invest in Cognitive Clarity",
+    pricingDesc: "Choose the plan that best supports your focus journey. No hidden fees, just pure productivity.",
+    mostPopular: "Most Popular",
+    getStarted: "Get Started",
+    upgradePro: "Upgrade to Pro",
+    contactSales: "Contact Sales",
     copyright: "© 2026 PeakFlow AI. All rights reserved."
   },
   tr: {
@@ -131,6 +139,14 @@ const dictionary = {
     ctaTitle: "Zirve Performansa Ulaşmaya Hazır Mısınız?",
     ctaDesc: "Her gün odaklanmalarını yapay zeka önerileriyle yönlendiren binlerce geliştirici ve üretici arasına katılın.",
     exploreBtn: "Özellikleri Keşfet",
+    features: "Özellikler",
+    pricing: "Fiyatlandırma",
+    pricingTitle: "Zihinsel Netliğe Yatırım Yapın",
+    pricingDesc: "Odaklanma yolculuğunuzu en iyi destekleyen planı seçin. Gizli ücretler yok, sadece saf üretkenlik.",
+    mostPopular: "En Popüler",
+    getStarted: "Başlarken",
+    upgradePro: "Pro'ya Yükselt",
+    contactSales: "Satışla İletişime Geçin",
     copyright: "© 2026 PeakFlow AI. Tüm hakları saklıdır."
   }
 };
@@ -169,6 +185,12 @@ export default function HomePage() {
               PeakFlow AI
             </span>
           </div>
+
+          {/* Navigation Links */}
+          <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-muted-foreground">
+            <a href="#features" className="hover:text-foreground transition-colors">{currentCopy.features}</a>
+            <a href="#pricing" className="hover:text-foreground transition-colors">{currentCopy.pricing}</a>
+          </nav>
 
           {/* Navigation Controls */}
           <div className="flex items-center gap-3 md:gap-5">
@@ -433,7 +455,7 @@ export default function HomePage() {
 
         {/* DETAILED SPACE PRESENTATION SECTION */}
         <FadeInOnScroll>
-          <section className="space-y-10">
+          <section id="features" className="space-y-10">
             <div className="text-center max-w-xl mx-auto space-y-3">
               <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
                 {currentCopy.featuresTitle}
@@ -676,6 +698,149 @@ export default function HomePage() {
                   <span className="text-[9px] text-muted-foreground flex-shrink-0 font-medium">{item.status}</span>
                 </div>
               ))}
+            </div>
+          </section>
+        </FadeInOnScroll>
+
+        {/* PRICING SECTION */}
+        <FadeInOnScroll>
+          <section id="pricing" className="space-y-12 py-10">
+            <div className="text-center max-w-xl mx-auto space-y-3">
+              <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+                {currentCopy.pricingTitle}
+              </h2>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                {currentCopy.pricingDesc}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch max-w-[1000px] mx-auto">
+              
+              {/* Free Plan */}
+              <div className="bg-card rounded-2xl p-8 flex flex-col gap-6 shadow-md border border-border/50 transition-all hover:shadow-lg duration-200">
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-xl font-bold text-foreground">{language === 'tr' ? "Ücretsiz" : "Free"}</h3>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-extrabold text-foreground">$0</span>
+                    <span className="text-xs text-muted-foreground">/mo</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground min-h-[40px]">
+                    {language === 'tr' ? "Enerjinizi yönetmeye başlamak için temel araçlar." : "Essential tools to start managing your energy."}
+                  </p>
+                </div>
+                
+                <hr className="border-border/40" />
+
+                <ul className="flex flex-col gap-3.5 flex-grow">
+                  <li className="flex items-start gap-2.5 text-xs text-foreground">
+                    <Check className="w-4.5 h-4.5 text-accent shrink-0 mt-0.5" />
+                    <span>{language === 'tr' ? "Temel Yapay Zeka Koçu" : "Core AI Coach"}</span>
+                  </li>
+                  <li className="flex items-start gap-2.5 text-xs text-foreground">
+                    <Check className="w-4.5 h-4.5 text-accent shrink-0 mt-0.5" />
+                    <span>{language === 'tr' ? "Haftada 3 Odaklanma Oturumu" : "3 Focus Sessions/week"}</span>
+                  </li>
+                  <li className="flex items-start gap-2.5 text-xs text-foreground">
+                    <Check className="w-4.5 h-4.5 text-accent shrink-0 mt-0.5" />
+                    <span>{language === 'tr' ? "Temel Analizler" : "Basic Insights"}</span>
+                  </li>
+                </ul>
+
+                <Link 
+                  href={firebaseUser ? "/dashboard" : "/signup"}
+                  className="w-full py-3 px-4 text-center rounded-xl font-bold text-xs text-foreground bg-secondary hover:bg-secondary/80 transition-colors border border-border/80 cursor-pointer mt-auto"
+                >
+                  {currentCopy.getStarted}
+                </Link>
+              </div>
+
+              {/* Pro Plan (Highlighted) */}
+              <div className="bg-card rounded-2xl p-8 flex flex-col gap-6 shadow-xl border-2 border-accent relative transform md:-translate-y-4 z-10 transition-all duration-200">
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground px-4 py-1 rounded-full text-[10px] font-black tracking-wider uppercase whitespace-nowrap shadow-md">
+                  {currentCopy.mostPopular}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-xl font-bold text-foreground">{language === 'tr' ? "Pro" : "Pro"}</h3>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-extrabold text-foreground">$15</span>
+                    <span className="text-xs text-muted-foreground">/mo</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground min-h-[40px]">
+                    {language === 'tr' ? "Derin çalışma profesyonelleri için gelişmiş yapay zeka özellikleri." : "Advanced AI features for deep work professionals."}
+                  </p>
+                </div>
+
+                <hr className="border-border/40" />
+
+                <ul className="flex flex-col gap-3.5 flex-grow">
+                  <li className="flex items-start gap-2.5 text-xs text-foreground">
+                    <CheckCircle2 className="w-4.5 h-4.5 text-accent shrink-0 mt-0.5" />
+                    <span className="font-medium">{language === 'tr' ? "Sınırsız Yapay Zeka Kararları" : "Unlimited AI Decisions"}</span>
+                  </li>
+                  <li className="flex items-start gap-2.5 text-xs text-foreground">
+                    <CheckCircle2 className="w-4.5 h-4.5 text-accent shrink-0 mt-0.5" />
+                    <span className="font-medium">{language === 'tr' ? "Enerji Analizi" : "Energy Analysis"}</span>
+                  </li>
+                  <li className="flex items-start gap-2.5 text-xs text-foreground">
+                    <CheckCircle2 className="w-4.5 h-4.5 text-accent shrink-0 mt-0.5" />
+                    <span className="font-medium">{language === 'tr' ? "Derin Çalışma Entegrasyonları" : "Deep Work Integrations"}</span>
+                  </li>
+                  <li className="flex items-start gap-2.5 text-xs text-foreground">
+                    <CheckCircle2 className="w-4.5 h-4.5 text-accent shrink-0 mt-0.5" />
+                    <span className="font-medium">{language === 'tr' ? "Öncelikli Destek" : "Priority Support"}</span>
+                  </li>
+                </ul>
+
+                <Link 
+                  href={firebaseUser ? "/dashboard" : "/signup"}
+                  className="w-full py-3 px-4 text-center rounded-xl font-bold text-xs text-accent-foreground bg-accent hover:bg-accent/90 transition-colors shadow-md shadow-accent/15 cursor-pointer mt-auto"
+                >
+                  {currentCopy.upgradePro}
+                </Link>
+              </div>
+
+              {/* Team Plan */}
+              <div className="bg-card rounded-2xl p-8 flex flex-col gap-6 shadow-md border border-border/50 transition-all hover:shadow-lg duration-200">
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-xl font-bold text-foreground">{language === 'tr' ? "Ekip" : "Team"}</h3>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-extrabold text-foreground">$49</span>
+                    <span className="text-xs text-muted-foreground">/user/mo</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground min-h-[40px]">
+                    {language === 'tr' ? "Zihinsel netliği tüm organizasyonunuza yayın." : "Scale cognitive clarity across your organization."}
+                  </p>
+                </div>
+
+                <hr className="border-border/40" />
+
+                <ul className="flex flex-col gap-3.5 flex-grow">
+                  <li className="flex items-start gap-2.5 text-xs text-foreground">
+                    <Check className="w-4.5 h-4.5 text-accent shrink-0 mt-0.5" />
+                    <span>{language === 'tr' ? "Pro'daki Her Şey" : "Everything in Pro"}</span>
+                  </li>
+                  <li className="flex items-start gap-2.5 text-xs text-foreground">
+                    <Check className="w-4.5 h-4.5 text-accent shrink-0 mt-0.5" />
+                    <span>{language === 'tr' ? "Ekip Analizleri" : "Team Insights"}</span>
+                  </li>
+                  <li className="flex items-start gap-2.5 text-xs text-foreground">
+                    <Check className="w-4.5 h-4.5 text-accent shrink-0 mt-0.5" />
+                    <span>{language === 'tr' ? "Ortaklaşa Odaklanma Modu" : "Collaborative Focus"}</span>
+                  </li>
+                  <li className="flex items-start gap-2.5 text-xs text-foreground">
+                    <Check className="w-4.5 h-4.5 text-accent shrink-0 mt-0.5" />
+                    <span>{language === 'tr' ? "Yönetici Kontrolleri" : "Admin Controls"}</span>
+                  </li>
+                </ul>
+
+                <Link 
+                  href={firebaseUser ? "/dashboard" : "/signup"}
+                  className="w-full py-3 px-4 text-center rounded-xl font-bold text-xs text-foreground bg-secondary hover:bg-secondary/80 transition-colors border border-border/80 cursor-pointer mt-auto"
+                >
+                  {currentCopy.contactSales}
+                </Link>
+              </div>
+
             </div>
           </section>
         </FadeInOnScroll>
