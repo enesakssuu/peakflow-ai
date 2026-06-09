@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -23,7 +24,8 @@ import {
   Link2,
   Users,
   Plus,
-  ChevronsUpDown
+  ChevronsUpDown,
+  User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -31,6 +33,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { userData, signOut } = useAuth();
   const { currentWorkspaceId, workspaces, switchWorkspace, activeWorkspace } = useWorkspace();
+  const { t } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const switcherRef = useRef<HTMLDivElement>(null);
@@ -48,17 +51,19 @@ export default function Sidebar() {
 
   const navItems = currentWorkspaceId === 'personal'
     ? [
-        { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/tasks', label: 'Tasks', icon: ListTodo },
-        { href: '/reflection', label: 'Reflection', icon: Heart },
-        { href: '/insights', label: 'Insights', icon: BarChart3 },
-        { href: '/integrations', label: 'Integrations', icon: Link2 },
+        { href: '/dashboard', label: t('sidebar.dashboard'), icon: LayoutDashboard },
+        { href: '/tasks', label: t('sidebar.tasks'), icon: ListTodo },
+        { href: '/reflection', label: t('sidebar.reflection'), icon: Heart },
+        { href: '/insights', label: t('sidebar.insights'), icon: BarChart3 },
+        { href: '/integrations', label: t('sidebar.integrations'), icon: Link2 },
+        { href: '/profile', label: t('sidebar.profile'), icon: User },
       ]
     : [
-        { href: '/team-dashboard', label: 'Team Dashboard', icon: LayoutDashboard },
-        { href: '/tasks', label: 'Workspace Tasks', icon: ListTodo },
-        { href: '/workspace', label: 'Workspace Settings', icon: Settings },
-        { href: '/integrations', label: 'Workspace Sync', icon: Link2 },
+        { href: '/team-dashboard', label: t('sidebar.team_dashboard'), icon: LayoutDashboard },
+        { href: '/tasks', label: t('sidebar.workspace_tasks'), icon: ListTodo },
+        { href: '/workspace', label: t('sidebar.workspace_settings'), icon: Settings },
+        { href: '/integrations', label: t('sidebar.workspace_sync'), icon: Link2 },
+        { href: '/profile', label: t('sidebar.profile'), icon: User },
       ];
 
   return (
@@ -120,7 +125,7 @@ export default function Sidebar() {
               {currentWorkspaceId === 'personal' ? (
                 <>
                   <Users className="w-4 h-4 text-accent shrink-0" />
-                  Personal Space
+                  {t('sidebar.personal_space')}
                 </>
               ) : (
                 <>
@@ -148,7 +153,7 @@ export default function Sidebar() {
                 )}
               >
                 <Users className="w-4 h-4 shrink-0" />
-                Personal Space
+                {t('sidebar.personal_space')}
               </button>
 
               <div className="border-t border-border/50 my-1" />
@@ -182,7 +187,7 @@ export default function Sidebar() {
                 className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors font-medium text-xs"
               >
                 <Plus className="w-3.5 h-3.5 shrink-0" />
-                Create Team Workspace
+                {t('sidebar.create_team_workspace')}
               </Link>
             </div>
           )}
@@ -232,7 +237,7 @@ export default function Sidebar() {
             onClick={signOut}
           >
             <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
+            {t('sidebar.sign_out')}
           </Button>
         </div>
       </aside>

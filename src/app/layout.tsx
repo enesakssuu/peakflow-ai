@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 import { WorkspaceProvider } from "@/context/WorkspaceContext";
 
 const inter = Inter({
@@ -32,9 +33,11 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <AuthProvider>
-          <WorkspaceProvider>
-            {children}
-          </WorkspaceProvider>
+          <LanguageProvider>
+            <WorkspaceProvider>
+              {children}
+            </WorkspaceProvider>
+          </LanguageProvider>
         </AuthProvider>
       </body>
     </html>

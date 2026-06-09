@@ -42,18 +42,18 @@ export default function TaskCard({ task, onStatusChange, onEdit, onDelete }: Tas
   const [showMenu, setShowMenu] = React.useState(false);
   const isCompleted = task.status === 'completed';
 
-  const statusIcon = {
+  const statusIcon: Record<string, React.ReactNode> = {
     backlog: <FolderOpen className="w-5 h-5 text-muted-foreground/60 hover:text-accent transition-colors" />,
     todo: <Circle className="w-5 h-5 text-muted-foreground hover:text-accent transition-colors" />,
     in_progress: <Loader2 className="w-5 h-5 text-accent animate-spin" />,
     completed: <CheckCircle2 className="w-5 h-5 text-success" />,
   };
 
-  const nextStatus: Record<TaskStatus, TaskStatus> = {
-    backlog: 'todo',
-    todo: 'in_progress',
-    in_progress: 'completed',
-    completed: 'backlog',
+  const handleToggle = () => {
+    const defaultOrder: TaskStatus[] = ['backlog', 'todo', 'in_progress', 'completed'];
+    const currentIdx = defaultOrder.indexOf(task.status as TaskStatus);
+    const next = currentIdx !== -1 ? defaultOrder[(currentIdx + 1) % defaultOrder.length] : 'todo';
+    onStatusChange(task.id, next);
   };
 
   return (
@@ -66,11 +66,11 @@ export default function TaskCard({ task, onStatusChange, onEdit, onDelete }: Tas
       <CardContent className="p-4 flex items-start gap-3.5">
         {/* Status toggle */}
         <button
-          onClick={() => onStatusChange(task.id, nextStatus[task.status])}
+          onClick={handleToggle}
           className="flex-shrink-0 cursor-pointer mt-0.5"
           title={`Status: ${task.status.replace('_', ' ')}`}
         >
-          {statusIcon[task.status]}
+          {statusIcon[task.status] || <Circle className="w-5 h-5 text-muted-foreground hover:text-accent transition-colors" />}
         </button>
 
         {/* Task info */}

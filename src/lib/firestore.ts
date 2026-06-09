@@ -155,13 +155,16 @@ export async function getTasks(userId: string, workspaceId: string | null = null
       imageUrl: data.imageUrl || '',
       estimatedDuration: data.estimatedDuration,
       impactScore: data.impactScore,
-      status: data.status as TaskStatus,
+      status: data.status,
       createdAt: toDate(data.createdAt),
       completedAt: data.completedAt ? toDate(data.completedAt) : null,
       workspaceId: data.workspaceId || null,
       source: data.source || 'local',
       sourceId: data.sourceId || null,
       assignedToUserId: data.assignedToUserId || null,
+      priority: data.priority || null,
+      dueDate: data.dueDate ? toDate(data.dueDate) : null,
+      subtasks: data.subtasks || [],
     };
   });
 
@@ -186,13 +189,16 @@ export async function getTask(taskId: string): Promise<Task | null> {
     imageUrl: data.imageUrl || '',
     estimatedDuration: data.estimatedDuration,
     impactScore: data.impactScore,
-    status: data.status as TaskStatus,
+    status: data.status,
     createdAt: toDate(data.createdAt),
     completedAt: data.completedAt ? toDate(data.completedAt) : null,
     workspaceId: data.workspaceId || null,
     source: data.source || 'local',
     sourceId: data.sourceId || null,
     assignedToUserId: data.assignedToUserId || null,
+    priority: data.priority || null,
+    dueDate: data.dueDate ? toDate(data.dueDate) : null,
+    subtasks: data.subtasks || [],
   };
 }
 
@@ -423,6 +429,7 @@ export async function getWorkspaces(userId: string): Promise<Workspace[]> {
         name: data.name,
         ownerId: data.ownerId,
         createdAt: toDate(data.createdAt),
+        columns: data.columns || null,
       });
     });
   }
@@ -609,4 +616,81 @@ export async function getIntegrations(targetId: string): Promise<Integration[]> 
 
 export async function deleteIntegration(id: string): Promise<void> {
   await deleteDoc(doc(db(), 'integrations', id));
+}
+
+// ── Task Comments ───────────────────────────────────────────
+
+export async function addTaskComment(
+  taskId: string,
+  comment: { userId: string; userName: string; content: string }
+): Promise<string> {
+  const ref = doc(collection(db(), 'tasks', taskId, 'comments'));
+  await setDoc(ref, {
+    userId: comment.userId,
+    userName: comment.userName,
+    content: comment.content,
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+export async function getTaskComments(taskId: string): Promise<any[]> {
+  const q = query(collection(db(), 'tasks', taskId, 'comments'));
+  const snap = await getDocs(q);
+  const list = snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      userId: data.userId,
+      userName: data.userName,
+      content: data.content,
+      createdAt: toDate(data.createdAt),
+    };
+  });
+  return list.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+}
+
+// ── Task Activities ─────────────────────────────────────────
+
+export async function addTaskActivity(
+  taskId: string,
+  activity: { userId: string; userName: string; type: string; details?: any }
+): Promise<string> {
+  const ref = doc(collection(db(), 'tasks', taskId, 'activities'));
+  await setDoc(ref, {
+    userId: activity.userId,
+    userName: activity.userName,
+    type: activity.type,
+    details: activity.details || null,
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+export async function getTaskActivities(taskId: string): Promise<any[]> {
+  const q = query(collection(db(), 'tasks', taskId, 'activities'));
+  const snap = await getDocs(q);
+  const list = snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      userId: data.userId,
+      userName: data.userName,
+      type: data.type,
+      details: data.details || null,
+      createdAt: toDate(data.createdAt),
+    };
+  });
+  return list.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+}
+
+// ── Workspace Custom Columns ────────────────────────────────
+
+export async function updateWorkspaceColumns(
+  workspaceId: string,
+  columns: { id: string; title: string; color: string }[]
+): Promise<void> {
+  await updateDoc(doc(db(), 'workspaces', workspaceId), {
+    columns,
+  });
 }

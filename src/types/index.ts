@@ -13,6 +13,7 @@ export interface User {
   onboardingCompleted: boolean;
   createdAt: Date;
   username?: string;
+  language?: string;
 }
 
 export interface Task {
@@ -23,13 +24,16 @@ export interface Task {
   imageUrl?: string;
   estimatedDuration: number; // in minutes
   impactScore: number;       // 1-5
-  status: TaskStatus;
+  status: string;
   createdAt: Date;
   completedAt?: Date | null;
   workspaceId?: string | null;
   source?: 'local' | 'plane' | 'trello';
   sourceId?: string | null;
   assignedToUserId?: string | null;
+  priority?: 'low' | 'medium' | 'high' | 'urgent' | null;
+  dueDate?: Date | null;
+  subtasks?: { id: string; title: string; completed: boolean }[] | null;
 }
 
 export interface FocusSession {
@@ -91,6 +95,7 @@ export interface Workspace {
   name: string;
   ownerId: string;
   createdAt: Date;
+  columns?: { id: string; title: string; color: string }[] | null;
 }
 
 export interface WorkspaceMember {
