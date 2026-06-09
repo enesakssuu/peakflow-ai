@@ -110,6 +110,7 @@ export async function createTask(
     assignedToUserId?: string | null;
     source?: 'local' | 'plane' | 'trello';
     sourceId?: string | null;
+    status?: string;
   }
 ): Promise<string> {
   const ref = doc(collection(db(), 'tasks'));
@@ -120,7 +121,7 @@ export async function createTask(
     imageUrl: data.imageUrl || '',
     estimatedDuration: data.estimatedDuration,
     impactScore: data.impactScore,
-    status: 'todo' as TaskStatus,
+    status: data.status || 'todo',
     createdAt: serverTimestamp(),
     completedAt: null,
     workspaceId: data.workspaceId || null,
